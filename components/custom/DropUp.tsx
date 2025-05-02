@@ -1,31 +1,39 @@
-import React, { ReactSVGElement, useState } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
-  FlatList,
   TouchableOpacity,
   TextInput,
-  ScrollView,
   Modal,
   Pressable,
   TouchableWithoutFeedback,
+  StyleSheet,
+  ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import DatePicker from "react-native-date-picker"; // Add this library
-import HealthLogo from "@/assets/svg/HealthLogo";
+import DatePicker from "react-native-date-picker";
 
-const categories = [
-  { id: "1", name: "Health", icon: <HealthLogo/> },
-  { id: "2", name: "Security", icon: "shield-checkmark" },
-  { id: "3", name: "Entertainment", icon: "md-musical-notes" },
-  { id: "4", name: "Nutrition", icon: "md-restaurant" },
-  { id: "5", name: "Governance", icon: "business" },
-];
+// Define icon types for type safety
+type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
 
 interface FilterProps {
   onFilterSelect: (filters: any) => void;
   isModalVisible: boolean;
   toggleModal: () => void;
+}
+
+// Define filter state interface
+interface FilterState {
+  categories: string[];
+  date: string | null;
+  location: string | null;
+}
+
+// Category interface
+interface Category {
+  id: string;
+  name: string;
+  icon: IoniconName;
 }
 
 const DropUp: React.FC<FilterProps> = ({
@@ -36,38 +44,48 @@ const DropUp: React.FC<FilterProps> = ({
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [location, setLocation] = useState<string>("Kigali, Rwanda");
-  const [isCalendarVisible, setCalendarVisible] = useState(false); // Calendar visibility
-  const [customDate, setCustomDate] = useState<Date | null>(null); // Selected custom date
+  const [isCalendarVisible, setCalendarVisible] = useState(false);
+  const [customDate, setCustomDate] = useState<Date | null>(null);
+
+  // Categories with icons
+  const categories: Category[] = [
+    { id: "1", name: "Health", icon: "camera" },
+    { id: "2", name: "Security", icon: "shield" },
+    { id: "3", name: "Entertainment", icon: "musical-notes" },
+    { id: "4", name: "Nutrition", icon: "restaurant" },
+    { id: "5", name: "Governance", icon: "business" },
+  ];
 
   const handleCategoryPress = (id: string) => {
-    if (selectedCategories.includes(id)) {
-      const updatedCategories = selectedCategories.filter(
-        (category) => category !== id
-      );
-      setSelectedCategories(updatedCategories);
-      onFilterSelect({ categories: updatedCategories, date: selectedDate, location });
-    } else {
-      const updatedCategories = [...selectedCategories, id];
-      setSelectedCategories(updatedCategories);
-      onFilterSelect({ categories: updatedCategories, date: selectedDate, location });
-    }
+    const newSelected = selectedCategories.includes(id)
+      ? selectedCategories.filter((catId) => catId !== id)
+      : [...selectedCategories, id];
+
+    setSelectedCategories(newSelected);
+    updateFilters(newSelected, selectedDate, location);
   };
 
   const handleDatePress = (date: string) => {
-    setSelectedDate((prevDate) => (prevDate === date ? null : date)); // Toggle selection
-    onFilterSelect({
-      categories: selectedCategories,
-      date: selectedDate === date ? null : date, // Deselect if clicked again
-      location,
-    });
+    const newDateValue = selectedDate === date ? null : date;
+    setSelectedDate(newDateValue);
+    updateFilters(selectedCategories, newDateValue, location);
   };
 
   const handleCustomDateSelect = (date: Date) => {
-    const formattedDate = date.toISOString().split("T")[0]; // Format date
+    const formattedDate = date.toISOString().split("T")[0];
     setCustomDate(date);
     setSelectedDate(formattedDate);
-    onFilterSelect({ categories: selectedCategories, date: formattedDate, location });
-    setCalendarVisible(false); // Close calendar
+    updateFilters(selectedCategories, formattedDate, location);
+    setCalendarVisible(false);
+  };
+
+  const updateFilters = (
+    categories: string[],
+    date: string | null,
+    location: string | null
+  ) => {
+    const filters: FilterState = { categories, date, location };
+    onFilterSelect(filters);
   };
 
   const resetFilters = () => {
@@ -75,7 +93,11 @@ const DropUp: React.FC<FilterProps> = ({
     setSelectedDate(null);
     setCustomDate(null);
     setLocation("Kigali, Rwanda");
-    onFilterSelect({ categories: [], date: null, location: "Kigali, Rwanda" });
+    updateFilters([], null, "Kigali, Rwanda");
+  };
+
+  const applyFilters = () => {
+    updateFilters(selectedCategories, selectedDate, location);
     toggleModal();
   };
 
@@ -86,164 +108,166 @@ const DropUp: React.FC<FilterProps> = ({
       visible={isModalVisible}
       onRequestClose={toggleModal}
     >
-      <Pressable
-        style={{
-          flex: 1,
-          backgroundColor: "rgba(0, 0, 0, 0.6)",
-          justifyContent: "flex-end",
-        }}
-        onPress={toggleModal}
-      >
+      <Pressable style={styles.backdrop} onPress={toggleModal}>
         <TouchableWithoutFeedback>
-          <View className="bg-white rounded-t-3xl py-6 px-6">
-            <Text className="text-center text-xl font-bold mb-4">Filter</Text>
+          <View style={styles.container}>
+            <View style={styles.handle} />
 
-            <Text className="text-lg font-semibold mb-3">Categories</Text>
-            <FlatList
-              data={categories}
+            <Text style={styles.title}>Filter</Text>
+
+            {/* Categories */}
+            <Text style={styles.sectionTitle}>Categories</Text>
+            <ScrollView
               horizontal
-              keyExtractor={(item) => item.id}
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ gap: 16 }}
-              renderItem={({ item }) => (
+              contentContainerStyle={styles.categoryScrollContainer}
+            >
+              {categories.map((item) => (
                 <TouchableOpacity
-                  className={`p-4 rounded-full border ${
-                    selectedCategories.includes(item.id)
-                      ? "bg-green-500 border-green-500"
-                      : "border-gray-300"
-                  }`}
+                  key={item.id}
+                  style={[styles.categoryButton]}
                   onPress={() => handleCategoryPress(item.id)}
                 >
-                  {/* <Ionicons
-                    name={item.icon as ReactSVGElement}
-                    size={24}
-                    color={
-                      selectedCategories.includes(item.id) ? "white" : "gray"
-                    }
-                  /> */}
-                  {item.icon}
+                  <View
+                    style={[
+                      styles.iconContainer,
+                      selectedCategories.includes(item.id) &&
+                        styles.selectedIconContainer,
+                    ]}
+                  >
+                    <Ionicons
+                      name={item.icon}
+                      size={24}
+                      color={
+                        selectedCategories.includes(item.id) ? "#fff" : "#666"
+                      }
+                    />
+                  </View>
                   <Text
-                    className={`text-center mt-2 ${
-                      selectedCategories.includes(item.id)
-                        ? "text-white"
-                        : "text-gray-700"
-                    }`}
+                    style={[
+                      styles.categoryText,
+                      selectedCategories.includes(item.id) &&
+                        styles.selectedCategoryText,
+                    ]}
                   >
                     {item.name}
                   </Text>
                 </TouchableOpacity>
-              )}
-            />
+              ))}
+            </ScrollView>
 
-            <Text className="text-lg font-semibold mt-6 mb-3">Time & Date</Text>
-            <View className="flex-row justify-between">
+            {/* Time & Date */}
+            <Text style={styles.sectionTitle}>Time & Date</Text>
+            <View style={styles.dateButtonsContainer}>
               <TouchableOpacity
-                className={`flex-1 p-3 rounded-lg border ${
-                  selectedDate === "Today"
-                    ? "bg-green-500 border-green-500"
-                    : "border-gray-300"
-                } mx-1`}
+                style={[
+                  styles.dateButton,
+                  selectedDate === "Today" && styles.selectedDateButton,
+                ]}
                 onPress={() => handleDatePress("Today")}
               >
                 <Text
-                  className={`text-center ${
-                    selectedDate === "Today" ? "text-white" : "text-gray-700"
-                  }`}
+                  style={[
+                    styles.dateButtonText,
+                    selectedDate === "Today" && styles.selectedDateButtonText,
+                  ]}
                 >
                   Today
                 </Text>
               </TouchableOpacity>
+
               <TouchableOpacity
-                className={`flex-1 p-3 rounded-lg border ${
-                  selectedDate === "Tomorrow"
-                    ? "bg-green-500 border-green-500"
-                    : "border-gray-300"
-                } mx-1`}
-                onPress={() => handleDatePress("Tomorrow")}
+                style={[
+                  styles.dateButton,
+                  selectedDate === "Yesterday" && styles.selectedDateButton,
+                ]}
+                onPress={() => handleDatePress("Yesterday")}
               >
                 <Text
-                  className={`text-center ${
-                    selectedDate === "Tomorrow"
-                      ? "text-white"
-                      : "text-gray-700"
-                  }`}
+                  style={[
+                    styles.dateButtonText,
+                    selectedDate === "Yesterday" &&
+                      styles.selectedDateButtonText,
+                  ]}
                 >
-                  Tomorrow
+                  Yesterday
                 </Text>
               </TouchableOpacity>
+
               <TouchableOpacity
-                className={`flex-1 p-3 rounded-lg border ${
-                  selectedDate === "This week"
-                    ? "bg-green-500 border-green-500"
-                    : "border-gray-300"
-                } mx-1`}
+                style={[
+                  styles.dateButton,
+                  selectedDate === "This week" && styles.selectedDateButton,
+                ]}
                 onPress={() => handleDatePress("This week")}
               >
                 <Text
-                  className={`text-center ${
-                    selectedDate === "This week"
-                      ? "text-white"
-                      : "text-gray-700"
-                  }`}
+                  style={[
+                    styles.dateButtonText,
+                    selectedDate === "This week" &&
+                      styles.selectedDateButtonText,
+                  ]}
                 >
                   This week
                 </Text>
               </TouchableOpacity>
             </View>
 
+            {/* Calendar picker */}
             <TouchableOpacity
-              className="flex-row items-center mt-4 border border-gray-300 rounded-lg p-3"
-              onPress={() => setCalendarVisible(true)} // Show calendar
+              style={styles.calendarButton}
+              onPress={() => setCalendarVisible(true)}
             >
-              <Ionicons name="calendar" size={20} color="gray" />
-              <Text className="text-gray-700 ml-2">Choose from calendar</Text>
+              <Ionicons name="calendar" size={20} color="#666" />
+              <Text style={styles.calendarButtonText}>
+                Choose from calendar
+              </Text>
+              <Ionicons
+                name="chevron-forward"
+                size={16}
+                color="#666"
+                style={styles.calendarIcon}
+              />
             </TouchableOpacity>
 
+            {/* Date picker */}
             <DatePicker
               modal
               open={isCalendarVisible}
               date={customDate || new Date()}
-              onConfirm={(date) => handleCustomDateSelect(date)}
+              onConfirm={handleCustomDateSelect}
               onCancel={() => setCalendarVisible(false)}
+              mode="date"
             />
 
             {/* Location */}
-            <Text className="text-lg font-semibold mt-6 mb-3">Location</Text>
-            <View className="flex-row items-center border border-gray-300 rounded-lg p-3">
-              <Ionicons name="location-outline" size={20} color="gray" />
-              <TextInput
-                value={location}
-                onChangeText={(text) => setLocation(text)}
-                className="flex-1 ml-2 text-gray-700"
-                placeholder="Enter location"
+            <Text style={styles.sectionTitle}>Location</Text>
+            <TouchableOpacity style={styles.locationContainer}>
+              <Ionicons name="location-outline" size={20} color="#25B14C" />
+              <Text style={styles.locationText}>{location}</Text>
+              <Ionicons
+                name="chevron-forward"
+                size={16}
+                color="#666"
+                style={styles.forwardIcon}
               />
-            </View>
+            </TouchableOpacity>
 
-            {/* Buttons */}
-            <View className="flex-row justify-between mt-8">
-              <Pressable
-                className="flex-1 bg-red-500 rounded-lg p-3 mx-1"
+            {/* Action Buttons */}
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity
+                style={styles.cancelButton}
                 onPress={resetFilters}
               >
-                <Text className="text-center text-white font-semibold">
-                  Reset
-                </Text>
-              </Pressable>
-              <Pressable
-                className="flex-1 bg-green-500 rounded-lg p-3 mx-1"
-                onPress={() => {
-                  onFilterSelect({
-                    categories: selectedCategories,
-                    date: selectedDate,
-                    location,
-                  });
-                  toggleModal();
-                }}
+                <Text style={styles.cancelButtonText}>cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.searchButton}
+                onPress={applyFilters}
               >
-                <Text className="text-center text-white font-semibold">
-                  Search
-                </Text>
-              </Pressable>
+                <Text style={styles.searchButtonText}>Search</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </TouchableWithoutFeedback>
@@ -251,5 +275,177 @@ const DropUp: React.FC<FilterProps> = ({
     </Modal>
   );
 };
+
+const styles = StyleSheet.create({
+  backdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
+  },
+  container: {
+    backgroundColor: "white",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+    paddingBottom: 36,
+  },
+  handle: {
+    width: 36,
+    height: 5,
+    backgroundColor: "#E0E0E0",
+    borderRadius: 3,
+    alignSelf: "center",
+    marginBottom: 12,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: "700",
+    textAlign: "center",
+    marginBottom: 20,
+    color: "#333",
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 16,
+    color: "#333",
+  },
+  categoryContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 24,
+    flexWrap: "wrap",
+  },
+  categoryScrollContainer: {
+    paddingBottom: 12,
+    paddingRight: 20,
+    marginBottom: 24,
+  },
+  categoryButton: {
+    alignItems: "center",
+    marginRight: 30,
+  },
+  iconContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "#F5F5F5",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+  },
+  selectedIconContainer: {
+    backgroundColor: "#25B14C",
+    borderColor: "#25B14C",
+  },
+  categoryText: {
+    fontSize: 12,
+    color: "#333",
+    textAlign: "center",
+  },
+  selectedCategoryText: {
+    color: "#333",
+    fontWeight: "500",
+  },
+  dateButtonsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 16,
+  },
+  dateButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    backgroundColor: "#F5F5F5",
+    marginHorizontal: 4,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+  },
+  selectedDateButton: {
+    backgroundColor: "#25B14C",
+    borderColor: "#25B14C",
+  },
+  dateButtonText: {
+    fontSize: 14,
+    color: "#333",
+  },
+  selectedDateButtonText: {
+    color: "white",
+    fontWeight: "500",
+  },
+  calendarButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+    marginBottom: 24,
+  },
+  calendarButtonText: {
+    fontSize: 14,
+    color: "#666",
+    marginLeft: 8,
+    flex: 1,
+  },
+  calendarIcon: {
+    marginLeft: 8,
+  },
+  locationContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+    marginBottom: 24,
+  },
+  locationText: {
+    fontSize: 14,
+    color: "#333",
+    marginLeft: 8,
+    flex: 1,
+  },
+  forwardIcon: {
+    alignSelf: "flex-end",
+  },
+  buttonContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 8,
+  },
+  cancelButton: {
+    flex: 1,
+    backgroundColor: "#E74C3C",
+    paddingVertical: 14,
+    borderRadius: 8,
+    marginRight: 8,
+    alignItems: "center",
+  },
+  cancelButtonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  searchButton: {
+    flex: 1,
+    backgroundColor: "#25B14C",
+    paddingVertical: 14,
+    borderRadius: 8,
+    marginLeft: 8,
+    alignItems: "center",
+  },
+  searchButtonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "500",
+  },
+});
 
 export default DropUp;

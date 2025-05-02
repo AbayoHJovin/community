@@ -77,19 +77,19 @@ const SearchScreen = () => {
     if (filters.date) {
       // Handle different date filters
       const today = new Date().toDateString();
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      const tomorrowString = tomorrow.toDateString();
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayString = yesterday.toDateString();
 
       if (filters.date === "Today") {
         filtered = filtered.filter((complaint) => {
           const complaintDate = new Date(complaint.date).toDateString();
           return complaintDate === today;
         });
-      } else if (filters.date === "Tomorrow") {
+      } else if (filters.date === "Yesterday") {
         filtered = filtered.filter((complaint) => {
           const complaintDate = new Date(complaint.date).toDateString();
-          return complaintDate === tomorrowString;
+          return complaintDate === yesterdayString;
         });
       } else if (filters.date === "This week") {
         const currentWeek = getWeekNumber(new Date());
