@@ -130,7 +130,7 @@ const HomeScreen = () => {
           <TouchableOpacity
             activeOpacity={0.8}
             onPress={() => router.push("/(tabs)/search")}
-            className="flex-1 bg-white rounded-xl h-[3.2rem] px-4 py-4 text-gray-600 items-center"
+            className="flex-1 bg-white rounded-xl h-[3rem] px-4 py-4 text-gray-600 items-center"
           >
             <Text className="text-[#A9A9A9]">Search for any complaint</Text>
           </TouchableOpacity>

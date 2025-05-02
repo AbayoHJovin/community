@@ -71,9 +71,9 @@ export default function TabLayout() {
       />
 
       <Tabs.Screen
-        name="explore"
+        name="complaints"
         options={{
-          title: "Explore",
+          title: "Complaints",
           tabBarIcon: ({ focused }) => (
             <View
               style={{
@@ -93,7 +93,7 @@ export default function TabLayout() {
                 marginTop: 4,
               }}
             >
-              Explore
+              Complaints
             </Text>
           ),
         }}
@@ -126,6 +126,36 @@ export default function TabLayout() {
           ),
         }}
       />
+      
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: "Profile",
+          tabBarIcon: ({ focused }) => (
+            <View
+              style={{
+                width: 30,
+                height: 30,
+                borderRadius: 15,
+                backgroundColor: "#25B14C",
+                opacity: focused ? 1 : 0.4,
+              }}
+            />
+          ),
+          tabBarLabel: ({ focused }) => (
+            <Text
+              style={{
+                color: focused ? "#25B14C" : "gray",
+                fontSize: 12,
+                marginTop: 4,
+              }}
+            >
+              Profile
+            </Text>
+          ),
+        }}
+      />
+      
     </Tabs>
   );
 }
