@@ -12,7 +12,7 @@ import { View } from "react-native";
 import "react-native-reanimated";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import "@/global.css"
+import "@/global.css";
 
 import { useColorScheme } from "@/hooks/useColorScheme";
 import OnboardingFlow from "./OnboardingFlow";
@@ -67,7 +67,11 @@ export default function RootLayout() {
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="landing" options={{headerShown:false}}/>
+        <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="landing"
+          options={{ headerShown: false }}
+        />
         <Stack.Screen name="+not-found" />
       </Stack>
       <StatusBar style="auto" />
