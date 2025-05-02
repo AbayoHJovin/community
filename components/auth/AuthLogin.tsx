@@ -63,11 +63,15 @@ const AuthLogin = ({ onNext, onLogin, onPrev }: OnboardingSlide1Props) => {
 
       <View className="px-8 flex-1 items-center" style={{ marginTop: 40 }}>
         <TouchableOpacity
-          onPress={onNext}
           activeOpacity={0.7}
           className="bg-green-600 w-[350px] rounded-md py-3"
         >
-          <Text className="text-center text-white font-bold text-lg">Done</Text>
+          <Text
+            onPress={onNext}
+            className="text-center text-white font-bold text-lg"
+          >
+            Done
+          </Text>
         </TouchableOpacity>
         <TouchableOpacity>
           <Text className="text-center text-gray-500  font-medium mt-4">

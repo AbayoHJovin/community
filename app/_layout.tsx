@@ -13,6 +13,8 @@ import "react-native-reanimated";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import "@/global.css";
+import { Provider } from "react-redux";
+import { store } from "@/store";
 
 import { useColorScheme } from "@/hooks/useColorScheme";
 import OnboardingFlow from "./OnboardingFlow";
@@ -64,17 +66,27 @@ export default function RootLayout() {
 
   // Otherwise, go to the main app
   return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-        <Stack.Screen
-          name="landing"
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <Provider store={store}>
+      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen
+            name="OnboardingFlow"
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="screens/complaint-explanation"
+            options={{ headerShown: false }}
+          />
+
+          <Stack.Screen
+            name="screens/add-complaint"
+            options={{ title: "Add Complaint" }}
+          />
+          <Stack.Screen name="+not-found" />
+        </Stack>
+        <StatusBar style="auto" />
+      </ThemeProvider>
+    </Provider>
   );
 }

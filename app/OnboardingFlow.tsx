@@ -30,7 +30,7 @@ export default function OnboardingFlow() {
     if (currentIndex < screens.length - 1) {
       setCurrentIndex(currentIndex + 1);
     } else {
-      router.replace("/landing");
+      router.replace("/(tabs)");
     }
   };
   

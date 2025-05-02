@@ -1,7 +1,14 @@
-import { View, Text, ImageBackground, TouchableOpacity, ImageSourcePropType } from "react-native";
+import {
+  View,
+  Text,
+  ImageBackground,
+  TouchableOpacity,
+  ImageSourcePropType,
+} from "react-native";
 import React from "react";
 import { AntDesign } from "@expo/vector-icons";
 import Tag from "@/assets/svg/Tag";
+
 interface propsDef {
   date: string;
   onPin: () => void;
@@ -11,6 +18,7 @@ interface propsDef {
   onClick: () => void;
   complaintBackground: ImageSourcePropType;
 }
+
 const ComplaintComponent = ({
   date,
   onPin,
@@ -21,63 +29,55 @@ const ComplaintComponent = ({
   complaintBackground,
 }: propsDef) => {
   return (
-    <View className="p-5 bg-white  mx-5 w-[274.84px] h-[350px] container rounded-lg shadow-2xl">
+    <TouchableOpacity
+      className="bg-white mx-4 w-[275px] h-[350px] rounded-2xl shadow-sm overflow-hidden"
+      activeOpacity={0.9}
+      onPress={onClick}
+    >
       <ImageBackground
         source={complaintBackground}
-        style={{
-          flex: 1,
-          padding: 16,
-          height: 160,
-          borderRadius: 20,
-        }}
-        resizeMode="stretch"
+        resizeMode="cover"
+        style={{ height: 160, justifyContent: "space-between", padding: 12 }}
+        imageStyle={{ borderRadius: 20 }}
       >
-        <View className="flex flex-row items-center justify-between">
-          <View className="bg-white rounded-lg px-4 py-2 items-center shadow-md">
-            <Text className="text-green-500 font-bold text-lg">
+        <View className="flex flex-row justify-between">
+          <View className="bg-white rounded-md px-3 py-1 items-center shadow">
+            <Text className="text-green-600 font-bold text-lg">
               {date.split(" ")[0]}
             </Text>
-            <Text className="text-green-500 text-sm">{date.split(" ")[1]}</Text>
+            <Text className="text-green-600 text-xs uppercase">
+              {date.split(" ")[1]}
+            </Text>
           </View>
           <TouchableOpacity
+            className="bg-white rounded-md px-3 py-1 shadow"
+            onPress={onPin}
             activeOpacity={0.7}
-            className="bg-white rounded-lg px-4 py-2 items-center shadow-md"
-            onPress={() => onPin()}
           >
             <Tag />
           </TouchableOpacity>
         </View>
       </ImageBackground>
 
-      <View>
-        <Text
-          className=" font-poppinsSemibold text-lg mb-2 w-[16rem]"
-          style={{
-            overflow: "hidden",
-            color: "#25B14C",
-            textOverflow: "ellipsis",
-          }}
-          numberOfLines={2}
-        >
-          {title}
-        </Text>
-        <Text
-          className="text-[#3D3B3B] mb-4 w-[16rem]"
-          style={{
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-          }}
-          numberOfLines={2}
-        >
-          {subtitle}
-        </Text>
+      <View className="p-4 flex-1 justify-between">
+        <View>
+          <Text
+            numberOfLines={2}
+            className="text-[#25B14C] text-base font-semibold mb-1"
+          >
+            {title}
+          </Text>
+          <Text numberOfLines={2} className="text-[#3D3B3B] text-sm mb-3">
+            {subtitle}
+          </Text>
+        </View>
 
         <View className="flex flex-row items-center space-x-2">
-          <AntDesign name="tag" size={25} color="#3D3B3B" />
-          <Text className="text-[#3D3B3B]">{location}</Text>
+          <AntDesign name="tag" size={18} color="#3D3B3B" />
+          <Text className="text-[#3D3B3B] text-sm">{location}</Text>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 };
 

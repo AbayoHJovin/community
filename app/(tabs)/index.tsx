@@ -63,51 +63,52 @@
 //   );
 // }
 
-
-
-
-
-import React, { useContext } from "react";
+import React, { useEffect } from "react";
 import {
   View,
   Text,
   ScrollView,
   Image,
-  TextInput,
   TouchableOpacity,
   FlatList,
-  Pressable,
-  ImageSourcePropType,
+  Alert,
 } from "react-native";
 import { router } from "expo-router";
-import { ComplaintsContext } from "@/contexts/complaintsContext";
 import ComplaintComponent from "@/components/custom/complaintComponent";
 import SearchButton from "@/assets/svg/SearchButton";
 import Bell from "@/assets/svg/Bell";
-
-interface Leader {
-  name: string;
-  responsibilities: string;
-}
-
-interface Complaint {
-  id: number;
-  date: string;
-  day: string;
-  time: string;
-  title: string;
-  subtitle: string;
-  location: string;
-  backgroundImage: ImageSourcePropType;
-  leader: Leader;
-}
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { fetchComplaints } from "@/store/slices/complaintsSlice";
 
 const HomeScreen = () => {
-  const complaints = useContext(ComplaintsContext) as Complaint[]
-  function onClick() {}
+  const dispatch = useAppDispatch();
+  const { complaints, loading, error } = useAppSelector(
+    (state) => state.complaints
+  );
+
+  useEffect(() => {
+    dispatch(fetchComplaints());
+  }, [dispatch]);
+
   function onPin() {
     console.log("Pinned!");
   }
+
+  const handleComplaintPress = (complaintId: number) => {
+    console.log("Navigating to complaint detail with ID:", complaintId);
+    try {
+      router.push({
+        pathname: "/screens/complaint-explanation",
+        params: { complaintId },
+      });
+    } catch (error) {
+      console.error("Navigation error:", error);
+      Alert.alert(
+        "Navigation Error",
+        "Could not navigate to complaint details."
+      );
+    }
+  };
 
   return (
     <ScrollView className="bg-gray-50">
@@ -122,15 +123,31 @@ const HomeScreen = () => {
           <Bell />
         </View>
         <View className="flex flex-row items-center mt-5 justify-between space-x-3">
-          <TouchableOpacity activeOpacity={0.8}  onPress={()=>router.push("/(tabs)/Search")} className="flex-1 bg-white rounded-xl h-[3.2rem] px-4 py-4 text-gray-600 items-center">
-            <Text className="text-[#A9A9A9] ">Search for any complaint</Text>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => router.push("/(tabs)/search")}
+            className="flex-1 bg-white rounded-xl h-[3.2rem] px-4 py-4 text-gray-600 items-center"
+          >
+            <Text className="text-[#A9A9A9]">Search for any complaint</Text>
           </TouchableOpacity>
-          <TouchableOpacity activeOpacity={0.8} onPress={()=>router.push("/(tabs)/Search")} className="flex items-center justify-center p-3">
-            <SearchButton/>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={() => router.push("/(tabs)/search")}
+            className="flex items-center justify-center p-3"
+          >
+            <SearchButton />
           </TouchableOpacity>
         </View>
       </View>
-      {complaints && complaints.length > 0 ? (
+      {loading ? (
+        <View className="flex-1 justify-center items-center h-[350px]">
+          <Text className="text-center text-gray-600 text-lg">Loading...</Text>
+        </View>
+      ) : error ? (
+        <View className="flex-1 justify-center items-center h-[350px]">
+          <Text className="text-center text-gray-600 text-lg">{error}</Text>
+        </View>
+      ) : complaints && complaints.length > 0 ? (
         <View>
           <View className="flex flex-row justify-between p-5">
             <Text className="text-[#25B14C] font-semibold text-lg">
@@ -142,13 +159,9 @@ const HomeScreen = () => {
             data={complaints}
             keyExtractor={(item) => item.id.toString()}
             renderItem={({ item }) => (
-              <Pressable
-                onPress={() =>
-                  router.push({
-                    pathname: `/screens/ComplaintExplanation`,
-                    params: { complaint: JSON.stringify(item) },
-                  })
-                }
+              <TouchableOpacity
+                activeOpacity={0.9}
+                onPress={() => handleComplaintPress(item.id)}
               >
                 <ComplaintComponent
                   complaintBackground={item.backgroundImage}
@@ -156,10 +169,10 @@ const HomeScreen = () => {
                   location={item.location}
                   subtitle={item.subtitle}
                   title={item.title}
-                  onClick={onClick}
+                  onClick={() => handleComplaintPress(item.id)}
                   onPin={onPin}
                 />
-              </Pressable>
+              </TouchableOpacity>
             )}
             horizontal
             contentContainerStyle={{
@@ -171,18 +184,22 @@ const HomeScreen = () => {
       ) : (
         <View className="flex-1 justify-center items-center h-[350px]">
           <Text className="text-center text-gray-600 text-lg">
-            You haven't posted any complaint yet!
+            You have not posted any complaint yet!
           </Text>
         </View>
       )}
-      <View className="bg-[#25B14C] mx-5 p-6 rounded-3xl gap-y-4 my-5">
+      <View className="bg-[#25B14C] mx-5 p-6 rounded-3xl gap-y-4 my-10">
         <Text className="text-white text-lg font-poppinsSemibold">
           Post your problem
         </Text>
         <Text className="text-white text-base w-[16rem] leading-6">
           Take your time and add here your problem and it get solved{" "}
         </Text>
-        <TouchableOpacity activeOpacity={0.7} onPress={()=>router.push("/screens/AddComplaintScreen")} className="bg-white px-4 py-4 w-[140px] items-center rounded-lg">
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => router.push("/screens/add-complaint")}
+          className="bg-white px-4 py-4 w-[140px] items-center rounded-lg"
+        >
           <Text className="text-[#25B14C] text-center font-poppinsSemibold">
             Add Complaint
           </Text>
