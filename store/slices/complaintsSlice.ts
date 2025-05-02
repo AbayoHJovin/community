@@ -7,9 +7,9 @@ const mockComplaints: Complaint[] = [
     date: "10 June 2024",
     day: "Tuesday",
     time: "10:00 AM",
-    title: "Stealing the cow from the cowshed",
+    title: "Hospital waste management issue",
     subtitle:
-      "Last week, when I left my herbs in the cowshed, it was stolen. I don't know what to do",
+      "There's improper disposal of medical waste near the local clinic that poses health risks",
     location: "Kigali Gasabo, Rwanda",
     backgroundImage: require("../../assets/images/userImage.png"),
     leader: { name: "Steve Bertin", responsibilities: "Mayor of Gasabo" },
@@ -17,19 +17,60 @@ const mockComplaints: Complaint[] = [
   },
   {
     id: 2,
-    date: "10 June 2024",
-    day: "Tuesday",
-    time: "10:00 AM",
-    title: "Stealing the cow from the cowshed",
+    date: "15 June 2024",
+    day: "Monday",
+    time: "09:30 AM",
+    title: "Street lighting not working",
     subtitle:
-      "Last week, when I left my herbs in the cowshed, it was stolen. I don't know what to do",
+      "The street lights in our neighborhood have been out for weeks, creating security concerns",
     location: "Kigali Gasabo, Rwanda",
     backgroundImage: require("../../assets/images/complaintImage.png"),
     leader: { name: "Steve Bertin", responsibilities: "Mayor of Gasabo" },
     category: "Security",
   },
+  {
+    id: 3,
+    date: "20 June 2024",
+    day: "Thursday",
+    time: "02:15 PM",
+    title: "Community center needs renovation",
+    subtitle:
+      "Our local entertainment center is in poor condition and needs urgent repairs",
+    location: "Kigali Nyarugenge, Rwanda",
+    backgroundImage: require("../../assets/images/userImage.png"),
+    leader: { name: "Jean Paul", responsibilities: "District Manager" },
+    category: "Entertainment",
+  },
+  {
+    id: 4,
+    date: "5 June 2024",
+    day: "Wednesday",
+    time: "11:45 AM",
+    title: "Food safety concerns at market",
+    subtitle:
+      "Several vendors at the local market aren't following proper food storage practices",
+    location: "Kigali Kicukiro, Rwanda",
+    backgroundImage: require("../../assets/images/complaintImage.png"),
+    leader: { name: "Marie Claire", responsibilities: "Health Inspector" },
+    category: "Nutrition",
+  },
+  {
+    id: 5,
+    date: "12 June 2024",
+    day: "Friday",
+    time: "04:20 PM",
+    title: "Delayed public service delivery",
+    subtitle:
+      "Processing of important documents is taking too long at government offices",
+    location: "Kigali Gasabo, Rwanda",
+    backgroundImage: require("../../assets/images/userImage.png"),
+    leader: {
+      name: "Emmanuel Rwasa",
+      responsibilities: "Public Service Director",
+    },
+    category: "Governance",
+  },
 ];
-
 export const fetchComplaints = createAsyncThunk(
   "complaints/fetchComplaints",
   async (_, { rejectWithValue }) => {

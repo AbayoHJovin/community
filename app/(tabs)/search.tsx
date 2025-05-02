@@ -29,6 +29,7 @@ const SearchScreen = () => {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [showNull, setShowNull] = useState<boolean>(false);
   const [isDropUpVisible, setDropUpVisible] = useState<boolean>(false);
+  const [activeFilters, setActiveFilters] = useState<boolean>(false);
 
   // Filters state
   const [filters, setFilters] = useState<FilterState>({
@@ -48,22 +49,32 @@ const SearchScreen = () => {
 
   // Apply filters for searching complaints
   const applyFilters = () => {
+    // Start with all complaints
     let filtered: Complaint[] = [...complaints];
 
+    // Check if any filters are active
+    const hasActiveCategories = filters.categories.length > 0;
+    const hasActiveDate = filters.date !== null;
+    const hasActiveLocation =
+      filters.location !== null && filters.location !== "Kigali, Rwanda";
+    const hasActiveSearch = searchQuery.trim().length > 0;
+
+    // Set active filters status for UI feedback
+    setActiveFilters(hasActiveCategories || hasActiveDate || hasActiveLocation);
+
     // Filter by search query - search in multiple fields for better results
-    if (searchQuery.trim()) {
+    if (hasActiveSearch) {
+      const query = searchQuery.toLowerCase().trim();
       filtered = filtered.filter(
         (complaint) =>
-          complaint.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          complaint.subtitle
-            .toLowerCase()
-            .includes(searchQuery.toLowerCase()) ||
-          complaint.location.toLowerCase().includes(searchQuery.toLowerCase())
+          complaint.title.toLowerCase().includes(query) ||
+          complaint.subtitle.toLowerCase().includes(query) ||
+          complaint.location.toLowerCase().includes(query)
       );
     }
 
     // Filter by category
-    if (filters.categories.length > 0) {
+    if (hasActiveCategories) {
       filtered = filtered.filter((complaint) => {
         // Convert IDs to category names
         const selectedCategories = filters.categories.map(
@@ -74,22 +85,28 @@ const SearchScreen = () => {
     }
 
     // Filter by date
-    if (filters.date) {
+    if (hasActiveDate) {
       // Handle different date filters
-      const today = new Date().toDateString();
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayString = today.toDateString();
+
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
+      yesterday.setHours(0, 0, 0, 0);
       const yesterdayString = yesterday.toDateString();
 
       if (filters.date === "Today") {
         filtered = filtered.filter((complaint) => {
-          const complaintDate = new Date(complaint.date).toDateString();
-          return complaintDate === today;
+          const complaintDate = new Date(complaint.date);
+          complaintDate.setHours(0, 0, 0, 0);
+          return complaintDate.toDateString() === todayString;
         });
       } else if (filters.date === "Yesterday") {
         filtered = filtered.filter((complaint) => {
-          const complaintDate = new Date(complaint.date).toDateString();
-          return complaintDate === yesterdayString;
+          const complaintDate = new Date(complaint.date);
+          complaintDate.setHours(0, 0, 0, 0);
+          return complaintDate.toDateString() === yesterdayString;
         });
       } else if (filters.date === "This week") {
         const currentWeek = getWeekNumber(new Date());
@@ -99,16 +116,24 @@ const SearchScreen = () => {
         });
       } else {
         // Handle custom date
-        filtered = filtered.filter((complaint) => {
-          const complaintDate = new Date(complaint.date).toDateString();
-          const filterDate = new Date(filters.date!).toDateString();
-          return complaintDate === filterDate;
-        });
+        try {
+          const filterDate = new Date(filters.date!);
+          filterDate.setHours(0, 0, 0, 0);
+          const filterDateString = filterDate.toDateString();
+
+          filtered = filtered.filter((complaint) => {
+            const complaintDate = new Date(complaint.date);
+            complaintDate.setHours(0, 0, 0, 0);
+            return complaintDate.toDateString() === filterDateString;
+          });
+        } catch (error) {
+          console.error("Error parsing date:", error);
+        }
       }
     }
 
     // Filter by location
-    if (filters.location) {
+    if (hasActiveLocation) {
       filtered = filtered.filter((complaint) =>
         complaint.location
           .toLowerCase()
@@ -127,6 +152,22 @@ const SearchScreen = () => {
     return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
   };
 
+  // Reset all filters
+  const resetAllFilters = () => {
+    setFilters({
+      categories: [],
+      date: null,
+      location: null,
+    });
+    setSearchQuery("");
+    setActiveFilters(false);
+  };
+
+  // Handle filter changes from DropUp
+  const handleFilterSelect = (selectedFilters: FilterState) => {
+    setFilters(selectedFilters);
+  };
+
   // Initialize filtered complaints with all complaints on mount
   useEffect(() => {
     setFilteredComplaints(complaints);
@@ -135,7 +176,7 @@ const SearchScreen = () => {
   // Apply filters whenever filters or search query change
   useEffect(() => {
     applyFilters();
-  }, [searchQuery, filters]);
+  }, [searchQuery, filters, complaints]);
 
   // Check if we have no results to show
   useEffect(() => {
@@ -143,7 +184,10 @@ const SearchScreen = () => {
   }, [filteredComplaints]);
 
   return (
-    <ScrollView className="bg-white min-h-screen p-5">
+    <ScrollView
+      className="bg-white min-h-screen p-5"
+      contentContainerStyle={styles.scrollViewContent}
+    >
       {/* Header */}
       <View className="flex flex-row items-center">
         <AntDesign
@@ -155,6 +199,11 @@ const SearchScreen = () => {
         <Text className="text-[#3D3B3B] ml-2 font-semibold text-2xl">
           Search
         </Text>
+        {activeFilters && (
+          <TouchableOpacity className="ml-auto" onPress={resetAllFilters}>
+            <Text className="text-[#25B14C] font-medium">Clear Filters</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Search Input */}
@@ -174,6 +223,31 @@ const SearchScreen = () => {
           <MenuIcon />
         </TouchableOpacity>
       </View>
+
+      {/* Active filters summary */}
+      {activeFilters && (
+        <View className="mt-3 mb-2 flex-row flex-wrap">
+          {filters.categories.length > 0 && (
+            <View className="bg-[#E6F7EE] px-3 py-1 rounded-full mr-2 mb-2">
+              <Text className="text-[#25B14C] text-sm">
+                {filters.categories.length > 1
+                  ? `${filters.categories.length} Categories`
+                  : categoryMap[filters.categories[0]]}
+              </Text>
+            </View>
+          )}
+          {filters.date && (
+            <View className="bg-[#E6F7EE] px-3 py-1 rounded-full mr-2 mb-2">
+              <Text className="text-[#25B14C] text-sm">{filters.date}</Text>
+            </View>
+          )}
+          {filters.location && filters.location !== "Kigali, Rwanda" && (
+            <View className="bg-[#E6F7EE] px-3 py-1 rounded-full mr-2 mb-2">
+              <Text className="text-[#25B14C] text-sm">{filters.location}</Text>
+            </View>
+          )}
+        </View>
+      )}
 
       {/* Show message when no complaints match search */}
       {showNull ? (
@@ -198,11 +272,10 @@ const SearchScreen = () => {
       )}
 
       <DropUp
-        onFilterSelect={(selectedFilters) => {
-          setFilters(selectedFilters);
-        }}
+        onFilterSelect={handleFilterSelect}
         isModalVisible={isDropUpVisible}
         toggleModal={() => setDropUpVisible(!isDropUpVisible)}
+        currentFilters={filters}
       />
     </ScrollView>
   );
@@ -211,6 +284,9 @@ const SearchScreen = () => {
 const styles = StyleSheet.create({
   textInput: {
     borderWidth: 0,
+  },
+  scrollViewContent: {
+    paddingBottom: 100, // Add padding to bottom to prevent overlap with tabs
   },
 });
 

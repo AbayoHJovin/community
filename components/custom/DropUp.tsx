@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -17,9 +17,10 @@ import DatePicker from "react-native-date-picker";
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
 
 interface FilterProps {
-  onFilterSelect: (filters: any) => void;
+  onFilterSelect: (filters: FilterState) => void;
   isModalVisible: boolean;
   toggleModal: () => void;
+  currentFilters?: FilterState;
 }
 
 // Define filter state interface
@@ -40,6 +41,7 @@ const DropUp: React.FC<FilterProps> = ({
   onFilterSelect,
   isModalVisible,
   toggleModal,
+  currentFilters,
 }) => {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -56,36 +58,53 @@ const DropUp: React.FC<FilterProps> = ({
     { id: "5", name: "Governance", icon: "business" },
   ];
 
+  // Update local state when currentFilters change
+  useEffect(() => {
+    if (currentFilters) {
+      setSelectedCategories(currentFilters.categories || []);
+      setSelectedDate(currentFilters.date || null);
+      setLocation(currentFilters.location || "Kigali, Rwanda");
+
+      // If there's a custom date, set the date picker
+      if (
+        currentFilters.date &&
+        !["Today", "Yesterday", "This week"].includes(currentFilters.date)
+      ) {
+        try {
+          setCustomDate(new Date(currentFilters.date));
+        } catch (error) {
+          console.error("Error parsing date:", error);
+        }
+      }
+    }
+  }, [currentFilters, isModalVisible]);
+
   const handleCategoryPress = (id: string) => {
     const newSelected = selectedCategories.includes(id)
       ? selectedCategories.filter((catId) => catId !== id)
       : [...selectedCategories, id];
 
     setSelectedCategories(newSelected);
-    updateFilters(newSelected, selectedDate, location);
   };
 
   const handleDatePress = (date: string) => {
     const newDateValue = selectedDate === date ? null : date;
     setSelectedDate(newDateValue);
-    updateFilters(selectedCategories, newDateValue, location);
+
+    // Clear custom date if a predefined date is selected
+    if (
+      newDateValue &&
+      ["Today", "Yesterday", "This week"].includes(newDateValue)
+    ) {
+      setCustomDate(null);
+    }
   };
 
   const handleCustomDateSelect = (date: Date) => {
     const formattedDate = date.toISOString().split("T")[0];
     setCustomDate(date);
     setSelectedDate(formattedDate);
-    updateFilters(selectedCategories, formattedDate, location);
     setCalendarVisible(false);
-  };
-
-  const updateFilters = (
-    categories: string[],
-    date: string | null,
-    location: string | null
-  ) => {
-    const filters: FilterState = { categories, date, location };
-    onFilterSelect(filters);
   };
 
   const resetFilters = () => {
@@ -93,11 +112,24 @@ const DropUp: React.FC<FilterProps> = ({
     setSelectedDate(null);
     setCustomDate(null);
     setLocation("Kigali, Rwanda");
-    updateFilters([], null, "Kigali, Rwanda");
+
+    // Apply the reset
+    onFilterSelect({
+      categories: [],
+      date: null,
+      location: "Kigali, Rwanda",
+    });
+
+    // Close the modal
+    toggleModal();
   };
 
   const applyFilters = () => {
-    updateFilters(selectedCategories, selectedDate, location);
+    onFilterSelect({
+      categories: selectedCategories,
+      date: selectedDate,
+      location,
+    });
     toggleModal();
   };
 
@@ -215,17 +247,31 @@ const DropUp: React.FC<FilterProps> = ({
 
             {/* Calendar picker */}
             <TouchableOpacity
-              style={styles.calendarButton}
+              style={[
+                styles.calendarButton,
+                customDate && styles.selectedCalendarButton,
+              ]}
               onPress={() => setCalendarVisible(true)}
             >
-              <Ionicons name="calendar" size={20} color="#666" />
-              <Text style={styles.calendarButtonText}>
-                Choose from calendar
+              <Ionicons
+                name="calendar"
+                size={20}
+                color={customDate ? "#25B14C" : "#666"}
+              />
+              <Text
+                style={[
+                  styles.calendarButtonText,
+                  customDate && styles.selectedCalendarButtonText,
+                ]}
+              >
+                {customDate
+                  ? customDate.toLocaleDateString()
+                  : "Choose from calendar"}
               </Text>
               <Ionicons
                 name="chevron-forward"
                 size={16}
-                color="#666"
+                color={customDate ? "#25B14C" : "#666"}
                 style={styles.calendarIcon}
               />
             </TouchableOpacity>
@@ -242,16 +288,16 @@ const DropUp: React.FC<FilterProps> = ({
 
             {/* Location */}
             <Text style={styles.sectionTitle}>Location</Text>
-            <TouchableOpacity style={styles.locationContainer}>
+            <View style={styles.locationContainer}>
               <Ionicons name="location-outline" size={20} color="#25B14C" />
-              <Text style={styles.locationText}>{location}</Text>
-              <Ionicons
-                name="chevron-forward"
-                size={16}
-                color="#666"
-                style={styles.forwardIcon}
+              <TextInput
+                style={styles.locationText}
+                value={location}
+                onChangeText={setLocation}
+                placeholder="Enter location"
+                placeholderTextColor="#999"
               />
-            </TouchableOpacity>
+            </View>
 
             {/* Action Buttons */}
             <View style={styles.buttonContainer}>
@@ -387,11 +433,18 @@ const styles = StyleSheet.create({
     borderColor: "#E0E0E0",
     marginBottom: 24,
   },
+  selectedCalendarButton: {
+    borderColor: "#25B14C",
+    backgroundColor: "#F3FBF6",
+  },
   calendarButtonText: {
     fontSize: 14,
     color: "#666",
     marginLeft: 8,
     flex: 1,
+  },
+  selectedCalendarButtonText: {
+    color: "#25B14C",
   },
   calendarIcon: {
     marginLeft: 8,

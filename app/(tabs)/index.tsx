@@ -72,6 +72,7 @@ import {
   TouchableOpacity,
   FlatList,
   Alert,
+  StyleSheet,
 } from "react-native";
 import { router } from "expo-router";
 import ComplaintComponent from "@/components/custom/complaintComponent";
@@ -111,7 +112,10 @@ const HomeScreen = () => {
   };
 
   return (
-    <ScrollView className="bg-gray-50">
+    <ScrollView
+      className="bg-gray-50"
+      contentContainerStyle={styles.scrollViewContent}
+    >
       <View className="bg-[#25B14C] w-full h-60 p-5 flex flex-col justify-evenly">
         <View className="flex flex-row items-center justify-between">
           <Image
@@ -208,5 +212,11 @@ const HomeScreen = () => {
     </ScrollView>
   );
 };
+
+const styles = StyleSheet.create({
+  scrollViewContent: {
+    paddingBottom: 80, // Add padding to prevent overlap with bottom tabs
+  },
+});
 
 export default HomeScreen;
