@@ -70,9 +70,18 @@ function RootLayout() {
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="OnboardingFlow" options={{ headerShown: false }} />
-          <Stack.Screen name="screens/complaint-explanation" options={{ headerShown: false }} />
-          <Stack.Screen name="screens/add-complaint" options={{ title: "Add Complaint" }} />
+          <Stack.Screen
+            name="OnboardingFlow"
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="screens/complaint-explanation"
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="screens/add-complaint"
+            options={{ headerShown: false }}
+          />
           <Stack.Screen name="+not-found" />
         </Stack>
         <StatusBar style="auto" />
