@@ -1,22 +1,19 @@
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-} from "react-native";
-import { AntDesign } from "@expo/vector-icons";
 import CommunityIcon from "@/assets/svg/CommunityIcon";
+import { AntDesign } from "@expo/vector-icons";
+import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 
 interface OnboardingSlide1Props {
   onNext: () => void;
   onLogin: () => void;
   onPrev?: () => void;
-
 }
 
 const OnboardingSlide1 = ({ onNext, onLogin }: OnboardingSlide1Props) => {
   return (
-    <ScrollView className="flex-1 bg-white p-6 justify-between">
+    <ScrollView
+      className="flex-1 bg-white p-6"
+      contentContainerStyle={{ justifyContent: "space-between", flexGrow: 1 }}
+    >
       {/* Title */}
       <Text className="text-[30px] text-[#25B14C] font-semibold mt-4">
         Welcome
@@ -39,9 +36,8 @@ const OnboardingSlide1 = ({ onNext, onLogin }: OnboardingSlide1Props) => {
       {/* Center Circle with Image */}
       <View className="justify-center items-center mt-4">
         <View className="rounded-full bg-white shadow-md w-44 h-44 justify-center items-center p-4">
-      
           <View className="w-16 h-16 justify-center items-center mb-2">
-            <CommunityIcon size={32} color="#25B14C" nameVisible/>
+            <CommunityIcon size={32} color="#25B14C" nameVisible />
           </View>
         </View>
       </View>

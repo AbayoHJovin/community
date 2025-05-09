@@ -9,7 +9,7 @@ import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 // import { AntDesign, Feather } from "@expo/vector-icons";
 
-export default function TabLayout() {
+function TabLayout() {
   const colorScheme = useColorScheme();
 
   return (
@@ -159,3 +159,5 @@ export default function TabLayout() {
     </Tabs>
   );
 }
+
+export default TabLayout;

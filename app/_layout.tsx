@@ -1,20 +1,19 @@
+import "@/global.css";
+import { store } from "@/store";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   DarkTheme,
   DefaultTheme,
   ThemeProvider,
 } from "@react-navigation/native";
 import { useFonts } from "expo-font";
-import { Stack } from "expo-router";
-import { StatusBar } from "expo-status-bar";
+import { Stack, useRouter } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
+import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import { View } from "react-native";
 import "react-native-reanimated";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter } from "expo-router";
-import "@/global.css";
 import { Provider } from "react-redux";
-import { store } from "@/store";
 
 import { useColorScheme } from "@/hooks/useColorScheme";
 import OnboardingFlow from "./OnboardingFlow";
@@ -22,7 +21,8 @@ import OnboardingFlow from "./OnboardingFlow";
 // 👇 Prevent auto-hiding splash screen
 SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
+// Explicitly define the component before exporting it
+function RootLayout() {
   const colorScheme = useColorScheme();
   const router = useRouter();
   const [fontsLoaded] = useFonts({
@@ -70,19 +70,9 @@ export default function RootLayout() {
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="OnboardingFlow"
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="screens/complaint-explanation"
-            options={{ headerShown: false }}
-          />
-
-          <Stack.Screen
-            name="screens/add-complaint"
-            options={{ title: "Add Complaint" }}
-          />
+          <Stack.Screen name="OnboardingFlow" options={{ headerShown: false }} />
+          <Stack.Screen name="screens/complaint-explanation" options={{ headerShown: false }} />
+          <Stack.Screen name="screens/add-complaint" options={{ title: "Add Complaint" }} />
           <Stack.Screen name="+not-found" />
         </Stack>
         <StatusBar style="auto" />
@@ -90,3 +80,6 @@ export default function RootLayout() {
     </Provider>
   );
 }
+
+// Explicitly export the component as default
+export default RootLayout;
