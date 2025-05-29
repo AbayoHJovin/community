@@ -24,8 +24,18 @@ const MAX_IMAGES = 5;
 
 // Helper for date picker
 const MONTHS = [
-  "January", "February", "March", "April", "May", "June", 
-  "July", "August", "September", "October", "November", "December"
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ];
 
 export default function AddComplaintScreen() {
@@ -40,16 +50,20 @@ export default function AddComplaintScreen() {
   const [activeTab, setActiveTab] = useState<string>("Title");
   const [title, setTitle] = useState<string>("");
   const [description, setDescription] = useState<string>("");
-  
+
   // Date picker state
   const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
   const [date, setDate] = useState<Date | null>(null);
-  const [tempDate, setTempDate] = useState<{day: number, month: number, year: number}>({
+  const [tempDate, setTempDate] = useState<{
+    day: number;
+    month: number;
+    year: number;
+  }>({
     day: new Date().getDate(),
     month: new Date().getMonth(),
-    year: new Date().getFullYear()
+    year: new Date().getFullYear(),
   });
-  
+
   const [location, setLocation] = useState<string>("Kigali, Rwanda");
 
   // Custom alert state
@@ -83,7 +97,11 @@ export default function AddComplaintScreen() {
   };
 
   const getDays = () => {
-    const daysInMonth = new Date(tempDate.year, tempDate.month + 1, 0).getDate();
+    const daysInMonth = new Date(
+      tempDate.year,
+      tempDate.month + 1,
+      0
+    ).getDate();
     const days = [];
     for (let i = 1; i <= daysInMonth; i++) {
       days.push(i);
@@ -98,7 +116,7 @@ export default function AddComplaintScreen() {
       setTempDate({
         day: date.getDate(),
         month: date.getMonth(),
-        year: date.getFullYear()
+        year: date.getFullYear(),
       });
     } else {
       // Initialize with today's date
@@ -106,7 +124,7 @@ export default function AddComplaintScreen() {
       setTempDate({
         day: today.getDate(),
         month: today.getMonth(),
-        year: today.getFullYear()
+        year: today.getFullYear(),
       });
     }
     setShowDatePicker(true);
@@ -118,7 +136,10 @@ export default function AddComplaintScreen() {
     today.setHours(0, 0, 0, 0);
 
     if (newDate > today) {
-      showCustomAlert("Please select a date that is not in the future", "warning");
+      showCustomAlert(
+        "Please select a date that is not in the future",
+        "warning"
+      );
       return;
     }
 
@@ -570,7 +591,7 @@ export default function AddComplaintScreen() {
             <View className="mt-2.5">
               <View className="mb-5">
                 <Text className="text-base mb-2 text-gray-700">Date</Text>
-                <TouchableOpacity 
+                <TouchableOpacity
                   className="border border-gray-300 rounded-lg p-4"
                   onPress={openDatePicker}
                 >
@@ -578,7 +599,7 @@ export default function AddComplaintScreen() {
                     {formatDate(date)}
                   </Text>
                 </TouchableOpacity>
-                
+
                 {/* Custom Date Picker Modal */}
                 <Modal
                   visible={showDatePicker}
@@ -589,27 +610,41 @@ export default function AddComplaintScreen() {
                     <View className="bg-white rounded-t-xl p-4">
                       <View className="flex-row justify-between mb-4">
                         <TouchableOpacity onPress={cancelDateSelection}>
-                          <Text className="text-blue-500 text-base">Cancel</Text>
+                          <Text className="text-blue-500 text-base">
+                            Cancel
+                          </Text>
                         </TouchableOpacity>
                         <TouchableOpacity onPress={confirmDateSelection}>
-                          <Text className="text-blue-500 text-base font-bold">Done</Text>
+                          <Text className="text-blue-500 text-base font-bold">
+                            Done
+                          </Text>
                         </TouchableOpacity>
                       </View>
-                      
+
                       {/* Date Picker Controls */}
                       <View className="flex-row justify-between mb-5">
                         {/* Day Picker */}
                         <View className="flex-1 mr-2">
-                          <Text className="text-gray-500 mb-2 text-center">Day</Text>
+                          <Text className="text-gray-500 mb-2 text-center">
+                            Day
+                          </Text>
                           <ScrollView className="h-40 border border-gray-200 rounded-lg">
                             {getDays().map((day) => (
-                              <TouchableOpacity 
+                              <TouchableOpacity
                                 key={`day-${day}`}
-                                className={`py-2 px-4 ${tempDate.day === day ? 'bg-green-100' : ''}`}
-                                onPress={() => setTempDate({...tempDate, day})}
+                                className={`py-2 px-4 ${
+                                  tempDate.day === day ? "bg-green-100" : ""
+                                }`}
+                                onPress={() =>
+                                  setTempDate({ ...tempDate, day })
+                                }
                               >
-                                <Text 
-                                  className={`text-center ${tempDate.day === day ? 'font-bold text-green-600' : ''}`}
+                                <Text
+                                  className={`text-center ${
+                                    tempDate.day === day
+                                      ? "font-bold text-green-600"
+                                      : ""
+                                  }`}
                                 >
                                   {day}
                                 </Text>
@@ -617,19 +652,29 @@ export default function AddComplaintScreen() {
                             ))}
                           </ScrollView>
                         </View>
-                        
+
                         {/* Month Picker */}
                         <View className="flex-1 mr-2">
-                          <Text className="text-gray-500 mb-2 text-center">Month</Text>
+                          <Text className="text-gray-500 mb-2 text-center">
+                            Month
+                          </Text>
                           <ScrollView className="h-40 border border-gray-200 rounded-lg">
                             {MONTHS.map((month, index) => (
-                              <TouchableOpacity 
+                              <TouchableOpacity
                                 key={`month-${index}`}
-                                className={`py-2 px-4 ${tempDate.month === index ? 'bg-green-100' : ''}`}
-                                onPress={() => setTempDate({...tempDate, month: index})}
+                                className={`py-2 px-4 ${
+                                  tempDate.month === index ? "bg-green-100" : ""
+                                }`}
+                                onPress={() =>
+                                  setTempDate({ ...tempDate, month: index })
+                                }
                               >
-                                <Text 
-                                  className={`text-center ${tempDate.month === index ? 'font-bold text-green-600' : ''}`}
+                                <Text
+                                  className={`text-center ${
+                                    tempDate.month === index
+                                      ? "font-bold text-green-600"
+                                      : ""
+                                  }`}
                                 >
                                   {month}
                                 </Text>
@@ -637,19 +682,29 @@ export default function AddComplaintScreen() {
                             ))}
                           </ScrollView>
                         </View>
-                        
+
                         {/* Year Picker */}
                         <View className="flex-1">
-                          <Text className="text-gray-500 mb-2 text-center">Year</Text>
+                          <Text className="text-gray-500 mb-2 text-center">
+                            Year
+                          </Text>
                           <ScrollView className="h-40 border border-gray-200 rounded-lg">
                             {getYears().map((year) => (
-                              <TouchableOpacity 
+                              <TouchableOpacity
                                 key={`year-${year}`}
-                                className={`py-2 px-4 ${tempDate.year === year ? 'bg-green-100' : ''}`}
-                                onPress={() => setTempDate({...tempDate, year})}
+                                className={`py-2 px-4 ${
+                                  tempDate.year === year ? "bg-green-100" : ""
+                                }`}
+                                onPress={() =>
+                                  setTempDate({ ...tempDate, year })
+                                }
                               >
-                                <Text 
-                                  className={`text-center ${tempDate.year === year ? 'font-bold text-green-600' : ''}`}
+                                <Text
+                                  className={`text-center ${
+                                    tempDate.year === year
+                                      ? "font-bold text-green-600"
+                                      : ""
+                                  }`}
                                 >
                                   {year}
                                 </Text>
@@ -658,11 +713,12 @@ export default function AddComplaintScreen() {
                           </ScrollView>
                         </View>
                       </View>
-                      
+
                       {/* Preview */}
                       <View className="border-t border-gray-200 pt-3">
                         <Text className="text-center text-gray-700">
-                          {MONTHS[tempDate.month]} {tempDate.day}, {tempDate.year}
+                          {MONTHS[tempDate.month]} {tempDate.day},{" "}
+                          {tempDate.year}
                         </Text>
                       </View>
                     </View>
