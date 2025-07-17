@@ -11,12 +11,11 @@ import { Stack, useRouter } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
-import { View } from "react-native";
+import { ActivityIndicator, Text, View } from "react-native";
 import "react-native-reanimated";
 import { Provider } from "react-redux";
 
 import { useColorScheme } from "@/hooks/useColorScheme";
-import OnboardingFlow from "./OnboardingFlow";
 
 // 👇 Prevent auto-hiding splash screen
 SplashScreen.preventAutoHideAsync();
@@ -31,40 +30,77 @@ function RootLayout() {
 
   const [appIsReady, setAppIsReady] = useState(false);
   const [hasSeenOnboarding, setHasSeenOnboarding] = useState(false);
+  const [initialRoute, setInitialRoute] = useState<string | null>(null);
 
   useEffect(() => {
     async function prepare() {
-      // Simulate loading process like fonts
+      // Check if fonts are loaded
       if (fontsLoaded) {
-        // Check if onboarding has been completed
-        const status = await AsyncStorage.getItem("hasSeenOnboarding");
-        if (status === "true") {
-          setHasSeenOnboarding(true);
-        } else {
-          setHasSeenOnboarding(false);
+        try {
+          // Check if onboarding has been completed
+          const status = await AsyncStorage.getItem("hasSeenOnboarding");
+
+          if (status === "true") {
+            setHasSeenOnboarding(true);
+
+            // Check if there's a stored user and their role
+            const userJson = await AsyncStorage.getItem("user");
+            if (userJson) {
+              try {
+                const user = JSON.parse(userJson);
+                // If user is a leader, set initial route to leader complaints
+                if (user.role === "leader") {
+                  setInitialRoute("/leader/complaints");
+                } else {
+                  setInitialRoute("/(tabs)");
+                }
+              } catch (error) {
+                console.error("Error parsing user data:", error);
+                setInitialRoute("/(tabs)");
+              }
+            } else {
+              setInitialRoute("/(tabs)");
+            }
+          } else {
+            setHasSeenOnboarding(false);
+            setInitialRoute("/OnboardingFlow");
+          }
+        } catch (error) {
+          console.error("Error during app initialization:", error);
+          setInitialRoute("/OnboardingFlow");
+        } finally {
+          setAppIsReady(true);
+          await SplashScreen.hideAsync(); // Hide splash screen once the app is ready
         }
-
-        // Simulate additional loading if needed (optional)
-        await new Promise((resolve) => setTimeout(resolve, 500));
-
-        setAppIsReady(true);
-        await SplashScreen.hideAsync(); // Hide splash screen once the app is ready
       }
     }
 
     prepare();
   }, [fontsLoaded]);
 
-  if (!appIsReady) {
-    return <View style={{ flex: 1, backgroundColor: "#fff" }} />; // You can show a loading screen here if needed
+  // Navigate to initial route when app is ready
+  useEffect(() => {
+    if (appIsReady && initialRoute) {
+      router.replace(initialRoute);
+    }
+  }, [appIsReady, initialRoute, router]);
+
+  if (!appIsReady || !initialRoute) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: "#fff",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <ActivityIndicator size="large" color="#25B14C" />
+        <Text style={{ marginTop: 10, color: "#666" }}>Loading...</Text>
+      </View>
+    );
   }
 
-  // If onboarding is not completed, show onboarding flow
-  if (!hasSeenOnboarding) {
-    return <OnboardingFlow />;
-  }
-
-  // Otherwise, go to the main app
   return (
     <Provider store={store}>
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
@@ -74,6 +110,7 @@ function RootLayout() {
             name="OnboardingFlow"
             options={{ headerShown: false }}
           />
+          <Stack.Screen name="leader" options={{ headerShown: false }} />
           <Stack.Screen
             name="screens/complaint-explanation"
             options={{ headerShown: false }}

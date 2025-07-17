@@ -16,6 +16,7 @@ export interface Complaint {
   backgroundImage: ImageSourcePropType;
   leader: Leader;
   category: string;
+  status?: "pending" | "in-progress" | "resolved";
 }
 
 export interface ComplaintsState {

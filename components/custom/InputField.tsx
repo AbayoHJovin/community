@@ -1,14 +1,19 @@
-
-import { TextInput } from "react-native";
 import { useState } from "react";
+import { TextInput } from "react-native";
 
 interface PropsValidation {
   placeholder: string;
   value: string | number;
   setValue: (newValue: string) => void;
+  secureTextEntry?: boolean;
 }
 
-const InputField = ({ placeholder, value, setValue }: PropsValidation) => {
+const InputField = ({
+  placeholder,
+  value,
+  setValue,
+  secureTextEntry,
+}: PropsValidation) => {
   const [isFocused, setIsFocused] = useState(false);
 
   return (
@@ -18,6 +23,7 @@ const InputField = ({ placeholder, value, setValue }: PropsValidation) => {
       onChangeText={(text) => setValue(text)}
       onFocus={() => setIsFocused(true)}
       onBlur={() => setIsFocused(false)}
+      secureTextEntry={secureTextEntry}
       style={{
         height: 60,
         width: "100%",

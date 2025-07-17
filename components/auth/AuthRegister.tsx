@@ -1,9 +1,9 @@
-import React, { useState } from "react";
-import { View, Text, TouchableOpacity, SafeAreaView } from "react-native";
-import InputField from "../custom/InputField";
-import PhoneInputComponent from "../custom/PhoneInputComponent";
 import CommunityIcon from "@/assets/svg/CommunityIcon";
 import Svg3 from "@/assets/svg/Svg3";
+import { useState } from "react";
+import { SafeAreaView, Text, TouchableOpacity, View } from "react-native";
+import InputField from "../custom/InputField";
+import PhoneInputComponent from "../custom/PhoneInputComponent";
 
 interface OnboardingSlide1Props {
   onNext: () => void;
@@ -26,7 +26,7 @@ const AuthRegister = ({ onNext, onLogin }: OnboardingSlide1Props) => {
           </Text>
 
           <View className="rounded-full my-5 w-[90px] h-[90px] justify-center items-center p-1">
-            <CommunityIcon nameVisible={false} />
+            <CommunityIcon nameVisible={false} size={100} />
           </View>
         </View>
       </View>

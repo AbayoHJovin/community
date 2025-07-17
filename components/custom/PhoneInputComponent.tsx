@@ -1,5 +1,5 @@
-import { View, TextInput, Text } from "react-native";
 import React, { useState } from "react";
+import { Text, TextInput, View } from "react-native";
 
 interface PhoneInputComponentProps {
   phoneNumber: string;
@@ -11,6 +11,19 @@ const PhoneInputComponent: React.FC<PhoneInputComponentProps> = ({
   setPhoneNumber,
 }) => {
   const [isFocused, setIsFocused] = useState(false);
+
+  // Format the phone number to ensure it doesn't start with +250
+  const handlePhoneChange = (text: string) => {
+    // Remove any non-digit characters
+    const digitsOnly = text.replace(/\D/g, "");
+
+    // Ensure the user doesn't try to enter the country code
+    if (digitsOnly.startsWith("250")) {
+      setPhoneNumber(digitsOnly.substring(3));
+    } else {
+      setPhoneNumber(digitsOnly);
+    }
+  };
 
   return (
     <View
@@ -30,8 +43,8 @@ const PhoneInputComponent: React.FC<PhoneInputComponentProps> = ({
       </Text>
       <TextInput
         value={phoneNumber}
-        onChangeText={setPhoneNumber}
-        placeholder="Phone number"
+        onChangeText={handlePhoneChange}
+        placeholder="7XXXXXXXX"
         keyboardType="phone-pad"
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}

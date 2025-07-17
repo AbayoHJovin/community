@@ -1,6 +1,12 @@
 import CommunityIcon from "@/assets/svg/CommunityIcon";
 import { AntDesign } from "@expo/vector-icons";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import {
+  Platform,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 interface OnboardingSlide1Props {
   onNext: () => void;
@@ -11,7 +17,7 @@ interface OnboardingSlide1Props {
 const OnboardingSlide1 = ({ onNext, onLogin }: OnboardingSlide1Props) => {
   return (
     <ScrollView
-      className="flex-1 bg-white p-6"
+      className="flex-1 bg-gray-100 p-6"
       contentContainerStyle={{ justifyContent: "space-between", flexGrow: 1 }}
     >
       {/* Title */}
@@ -21,28 +27,51 @@ const OnboardingSlide1 = ({ onNext, onLogin }: OnboardingSlide1Props) => {
 
       {/* Top Circles */}
       <View className="flex-row justify-between items-center w-full px-2 mt-4">
-        <View className="rounded-full bg-white shadow-md w-28 h-28 justify-center items-center">
+        <View
+          className="rounded-full bg-white shadow-sm w-28 h-28 justify-center items-center"
+          style={{ elevation: 10 }}
+        >
           <Text className="text-[#25B14C] text-center text-sm px-2">
             Submit your problems
           </Text>
         </View>
-        <View className="rounded-full bg-white shadow-md w-28 h-28 justify-center items-center">
+
+        <View
+          className="rounded-full bg-white shadow-md w-28 h-28 justify-center items-center"
+          style={{ elevation: 6 }} // Slightly stronger shadow for Android
+        >
           <Text className="text-[#25B14C] text-center text-sm px-2">
             Solve your problems
           </Text>
         </View>
       </View>
 
-      {/* Center Circle with Image */}
       <View className="justify-center items-center mt-4">
-        <View className="rounded-full bg-white shadow-md w-44 h-44 justify-center items-center p-4">
-          <View className="w-16 h-16 justify-center items-center mb-2">
-            <CommunityIcon size={32} color="#25B14C" nameVisible />
+        <View
+          className="rounded-full bg-white w-44 h-44 justify-center items-center p-4"
+          style={{
+            ...Platform.select({
+              ios: {
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.2,
+                shadowRadius: 6,
+              },
+              android: {
+                elevation: 10,
+              },
+            }),
+          }}
+        >
+          <Text className="text-[#25B14C] text-center font-semibold mb-2">
+            All In one
+          </Text>
+          <View className="w-20 h-20 justify-center items-center my-2">
+            <CommunityIcon size={130} color="#25B14C" nameVisible={false} />
           </View>
         </View>
       </View>
 
-      {/* Description */}
       <View className="mt-6 px-2">
         <Text className="text-[#25B14C] text-lg font-semibold mb-1">
           Community Complaints
@@ -52,7 +81,6 @@ const OnboardingSlide1 = ({ onNext, onLogin }: OnboardingSlide1Props) => {
         </Text>
       </View>
 
-      {/* Button */}
       <View className="w-full items-center mt-4">
         <TouchableOpacity
           onPress={onNext}
