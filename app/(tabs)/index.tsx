@@ -63,29 +63,30 @@
 //   );
 // }
 
-import React, { useEffect } from "react";
-import {
-  View,
-  Text,
-  ScrollView,
-  Image,
-  TouchableOpacity,
-  FlatList,
-  Alert,
-  StyleSheet,
-} from "react-native";
-import { router } from "expo-router";
-import ComplaintComponent from "@/components/custom/complaintComponent";
 import SearchButton from "@/assets/svg/SearchButton";
-import Bell from "@/assets/svg/Bell";
+import ComplaintComponent from "@/components/custom/complaintComponent";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { fetchComplaints } from "@/store/slices/complaintsSlice";
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import { useEffect } from "react";
+import {
+  Alert,
+  FlatList,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 const HomeScreen = () => {
   const dispatch = useAppDispatch();
   const { complaints, loading, error } = useAppSelector(
     (state) => state.complaints
   );
+  const { unreadCount } = useAppSelector((state) => state.notifications);
 
   useEffect(() => {
     dispatch(fetchComplaints());
@@ -111,6 +112,10 @@ const HomeScreen = () => {
     }
   };
 
+  const navigateToNotifications = () => {
+    router.push("/notifications");
+  };
+
   return (
     <ScrollView
       className="bg-gray-50"
@@ -124,7 +129,19 @@ const HomeScreen = () => {
             className="w-14 h-14 rounded-full"
           />
           <Text className="text-white font-semibold text-xl">Welcome</Text>
-          <Bell />
+          <TouchableOpacity
+            onPress={navigateToNotifications}
+            className="relative"
+          >
+            <Ionicons name="notifications" size={28} color="white" />
+            {unreadCount > 0 && (
+              <View className="absolute -top-1 -right-1 bg-red-500 rounded-full w-5 h-5 items-center justify-center">
+                <Text className="text-white text-xs font-bold">
+                  {unreadCount}
+                </Text>
+              </View>
+            )}
+          </TouchableOpacity>
         </View>
         <View className="flex flex-row items-center mt-5 justify-between space-x-3">
           <TouchableOpacity

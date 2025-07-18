@@ -110,7 +110,14 @@ function RootLayout() {
             name="OnboardingFlow"
             options={{ headerShown: false }}
           />
-          <Stack.Screen name="leader" options={{ headerShown: false }} />
+          <Stack.Screen
+            name="leader"
+            options={{ headerShown: false }}
+          />
+          <Stack.Screen
+            name="notifications"
+            options={{ headerShown: false }}
+          />
           <Stack.Screen
             name="screens/complaint-explanation"
             options={{ headerShown: false }}

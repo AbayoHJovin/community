@@ -27,10 +27,10 @@ export default function ProfileScreen() {
 
   // Edit profile modal state
   const [editModalVisible, setEditModalVisible] = useState(false);
-
+  
   // Language selection modal state
   const [languageModalVisible, setLanguageModalVisible] = useState(false);
-
+  
   // Location selection modal state
   const [locationModalVisible, setLocationModalVisible] = useState(false);
 
@@ -42,7 +42,7 @@ export default function ProfileScreen() {
 
   // Available languages
   const languages = ["English", "French", "Kinyarwanda", "Swahili"];
-
+  
   // Available locations
   const locations = [
     "Kigali, Rwanda",
@@ -114,12 +114,12 @@ export default function ProfileScreen() {
   // Function to handle logout
   const handleLogout = () => {
     Alert.alert("Logout", "Are you sure you want to logout?", [
-      {
-        text: "Cancel",
-        style: "cancel",
-      },
-      {
-        text: "Logout",
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Logout",
         onPress: async () => {
           // In a real app, you would handle backend logout logic here
 
@@ -130,9 +130,9 @@ export default function ProfileScreen() {
 
           // Navigate to onboarding flow
           router.replace("/OnboardingFlow");
+          },
+          style: "destructive",
         },
-        style: "destructive",
-      },
     ]);
   };
 
@@ -160,8 +160,8 @@ export default function ProfileScreen() {
         />
         <Text className="mt-4 text-xl font-bold">{userData.name}</Text>
         <Text className="text-gray-500">{userData.email}</Text>
-
-        <TouchableOpacity
+        
+        <TouchableOpacity 
           onPress={() => setEditModalVisible(true)}
           className="mt-4 bg-[#25B14C] px-6 py-3 rounded-full"
         >
@@ -172,7 +172,7 @@ export default function ProfileScreen() {
       {/* Settings Options */}
       <View className="mt-10 px-5">
         {/* Language Option */}
-        <TouchableOpacity
+        <TouchableOpacity 
           onPress={() => setLanguageModalVisible(true)}
           className="flex-row items-center justify-between py-4 border-b border-gray-200"
         >
@@ -187,7 +187,7 @@ export default function ProfileScreen() {
         </TouchableOpacity>
 
         {/* Location Option */}
-        <TouchableOpacity
+        <TouchableOpacity 
           onPress={() => setLocationModalVisible(true)}
           className="flex-row items-center justify-between py-4 border-b border-gray-200"
         >
@@ -202,7 +202,7 @@ export default function ProfileScreen() {
         </TouchableOpacity>
 
         {/* View Complaints Option */}
-        <TouchableOpacity
+        <TouchableOpacity 
           onPress={navigateToComplaints}
           className="flex-row items-center justify-between py-4 border-b border-gray-200"
         >
@@ -217,7 +217,7 @@ export default function ProfileScreen() {
       </View>
 
       {/* Logout Button */}
-      <TouchableOpacity
+      <TouchableOpacity 
         onPress={handleLogout}
         className="mx-5 mt-10 mb-20 bg-[#F05941] py-4 rounded-lg items-center"
       >
@@ -247,7 +247,7 @@ export default function ProfileScreen() {
                   source={tempProfileImage}
                   className="w-24 h-24 rounded-full"
                 />
-                <TouchableOpacity
+                <TouchableOpacity 
                   onPress={pickImage}
                   className="absolute bottom-0 right-0 bg-[#25B14C] p-2 rounded-full"
                 >
@@ -261,7 +261,7 @@ export default function ProfileScreen() {
 
             {/* Form Fields */}
             <Text className="text-gray-700 mb-1 ml-2">Full Name</Text>
-            <InputField
+            <InputField 
               placeholder="Enter your full name"
               value={formName}
               setValue={setFormName}
@@ -275,7 +275,7 @@ export default function ProfileScreen() {
             </View>
 
             {/* Save Button */}
-            <TouchableOpacity
+            <TouchableOpacity 
               onPress={saveProfileChanges}
               className="mt-8 bg-[#25B14C] py-4 rounded-full items-center"
             >
@@ -302,7 +302,7 @@ export default function ProfileScreen() {
             </View>
 
             {languages.map((lang, index) => (
-              <TouchableOpacity
+              <TouchableOpacity 
                 key={index}
                 onPress={() => selectLanguage(lang)}
                 className={`py-4 px-2 border-b border-gray-100 flex-row justify-between items-center ${
@@ -344,7 +344,7 @@ export default function ProfileScreen() {
             </View>
 
             {locations.map((loc, index) => (
-              <TouchableOpacity
+              <TouchableOpacity 
                 key={index}
                 onPress={() => selectLocation(loc)}
                 className={`py-4 px-2 border-b border-gray-100 flex-row justify-between items-center ${
