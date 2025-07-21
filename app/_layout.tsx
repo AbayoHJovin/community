@@ -20,8 +20,8 @@ import { useColorScheme } from "@/hooks/useColorScheme";
 // 👇 Prevent auto-hiding splash screen
 SplashScreen.preventAutoHideAsync();
 
-// Explicitly define the component before exporting it
-function RootLayout() {
+// Main app layout with Redux
+function RootLayoutWithRedux() {
   const colorScheme = useColorScheme();
   const router = useRouter();
   const [fontsLoaded] = useFonts({
@@ -29,59 +29,47 @@ function RootLayout() {
   });
 
   const [appIsReady, setAppIsReady] = useState(false);
-  const [hasSeenOnboarding, setHasSeenOnboarding] = useState(false);
   const [initialRoute, setInitialRoute] = useState<string | null>(null);
 
+  // We need to dispatch actions after the component is mounted
+  // so we'll handle auth check in a useEffect
   useEffect(() => {
-    async function prepare() {
-      // Check if fonts are loaded
-      if (fontsLoaded) {
-        try {
-          // Check if onboarding has been completed
-          const status = await AsyncStorage.getItem("hasSeenOnboarding");
-
-          if (status === "true") {
-            setHasSeenOnboarding(true);
-
-            // Check if there's a stored user and their role
-            const userJson = await AsyncStorage.getItem("user");
-            if (userJson) {
-              try {
-                const user = JSON.parse(userJson);
-                // If user is a leader, set initial route to leader complaints
-                if (user.role === "leader") {
-                  setInitialRoute("/leader/complaints");
-                } else {
-                  setInitialRoute("/(tabs)");
-                }
-              } catch (error) {
-                console.error("Error parsing user data:", error);
-                setInitialRoute("/(tabs)");
-              }
-            } else {
-              setInitialRoute("/(tabs)");
-            }
+    async function checkAuthentication() {
+      try {
+        // Check if user data exists in AsyncStorage
+        const userJson = await AsyncStorage.getItem("user");
+        const token = await AsyncStorage.getItem("token");
+        
+        if (userJson && token) {
+          const user = JSON.parse(userJson);
+          if (user.role === "leader") {
+            setInitialRoute("/leader/welcome");
           } else {
-            setHasSeenOnboarding(false);
-            setInitialRoute("/OnboardingFlow");
+            setInitialRoute("/(tabs)");
           }
-        } catch (error) {
-          console.error("Error during app initialization:", error);
+        } else {
+          // No authenticated user, show onboarding
           setInitialRoute("/OnboardingFlow");
-        } finally {
-          setAppIsReady(true);
-          await SplashScreen.hideAsync(); // Hide splash screen once the app is ready
         }
+      } catch (error) {
+        console.error("Error checking authentication:", error);
+        setInitialRoute("/OnboardingFlow");
+      } finally {
+        setAppIsReady(true);
+        await SplashScreen.hideAsync();
       }
     }
 
-    prepare();
+    // Check if fonts are loaded before proceeding
+    if (fontsLoaded) {
+      checkAuthentication();
+    }
   }, [fontsLoaded]);
 
   // Navigate to initial route when app is ready
   useEffect(() => {
     if (appIsReady && initialRoute) {
-      router.replace(initialRoute);
+      router.replace(initialRoute as any);
     }
   }, [appIsReady, initialRoute, router]);
 
@@ -102,30 +90,34 @@ function RootLayout() {
   }
 
   return (
-    <Provider store={store}>
-      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="OnboardingFlow"
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen name="leader" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="screens/complaint-explanation"
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="screens/add-complaint"
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen name="+not-found" />
-        </Stack>
-        <StatusBar style="auto" />
-      </ThemeProvider>
-    </Provider>
+    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+      <Stack>
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="OnboardingFlow"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen name="leader" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="screens/complaint-explanation"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="screens/add-complaint"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen name="+not-found" />
+      </Stack>
+      <StatusBar style="auto" />
+    </ThemeProvider>
   );
 }
 
-// Explicitly export the component as default
-export default RootLayout;
+// Wrap the app with Redux provider - this is the actual exported component
+export default function RootLayout() {
+  return (
+    <Provider store={store}>
+      <RootLayoutWithRedux />
+    </Provider>
+  );
+}

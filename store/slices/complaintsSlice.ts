@@ -1,3 +1,4 @@
+import { fetchUserComplaints } from "@/services/complaintService";
 import { Complaint, ComplaintsState } from "@/types/complaint";
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 
@@ -118,19 +119,38 @@ const mockComplaints: Complaint[] = [
 
 export const fetchComplaints = createAsyncThunk(
   "complaints/fetchComplaints",
-  async (_, { rejectWithValue }) => {
+  async (_, { rejectWithValue, getState }) => {
     try {
-      // First try using fetch API
-      const response = await fetch("http://localhost:5000/api/complaints");
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
+      // Try to get current user ID
+      const state: any = getState();
+      const userId = state.auth.user?.id;
+      
+      if (userId) {
+        // Get user-specific complaints if logged in
+        try {
+          const userComplaints = await fetchUserComplaints(userId);
+          return userComplaints;
+        } catch (error) {
+          console.log("Error fetching user complaints, using mock data:", error);
+        }
       }
-      const data = await response.json();
-      return data;
+      
+      // First try using fetch API for all complaints
+      try {
+        const response = await fetch("http://localhost:5000/api/complaints");
+        if (!response.ok) {
+          throw new Error("Network response was not ok");
+        }
+        const data = await response.json();
+        return data;
+      } catch (apiError) {
+        console.log("Error fetching complaints from API, using mock data:", apiError);
+        // Return mock data if the API call fails
+        return mockComplaints;
+      }
     } catch (error) {
-      console.log("Error fetching complaints, using mock data:", error);
-      // Return mock data if the API call fails
-      return mockComplaints;
+      console.log("Error in fetchComplaints thunk:", error);
+      return rejectWithValue("Failed to fetch complaints");
     }
   }
 );
@@ -172,6 +192,12 @@ const complaintsSlice = createSlice({
         (complaint) => complaint.id !== action.payload
       );
     },
+    
+    // Add new complaint (used after creating a new complaint)
+    addNewComplaint: (state, action: PayloadAction<Complaint>) => {
+      console.log("Adding new complaint:", action.payload);
+      state.complaints.unshift(action.payload); // Add to the beginning of the array
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -209,5 +235,5 @@ const complaintsSlice = createSlice({
   },
 });
 
-export const { removeComplaint } = complaintsSlice.actions;
+export const { removeComplaint, addNewComplaint } = complaintsSlice.actions;
 export default complaintsSlice.reducer;

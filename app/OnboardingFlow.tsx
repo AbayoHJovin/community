@@ -32,8 +32,10 @@ export default function OnboardingFlow() {
         if (user) {
           // If user is authenticated, redirect based on role
           if (user.role === "leader") {
+            // Send leaders to leader welcome screen
             router.replace("/leader/welcome");
           } else {
+            // Send citizens to home screen
             router.replace("/(tabs)");
           }
         } else {

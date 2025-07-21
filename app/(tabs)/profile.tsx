@@ -1,30 +1,25 @@
 import InputField from "@/components/custom/InputField";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { logoutUser, updateUserProfile } from "@/store/slices/authSlice";
 import { AntDesign, Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
-  Alert,
-  Image,
-  Modal,
-  Platform,
-  ScrollView,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    Image,
+    Modal,
+    Platform,
+    ScrollView,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 export default function ProfileScreen() {
-  // User data state
-  const [userData, setUserData] = useState({
-    name: "KARASIRA AINE",
-    email: "karasiraine5@gmail.com",
-    profileImage: require("@/assets/images/userImage.png"),
-    language: "English",
-    location: "Kigali, Rwanda",
-  });
-
+  const dispatch = useAppDispatch();
+  const { user } = useAppSelector((state) => state.auth);
+  
   // Edit profile modal state
   const [editModalVisible, setEditModalVisible] = useState(false);
 
@@ -35,10 +30,20 @@ export default function ProfileScreen() {
   const [locationModalVisible, setLocationModalVisible] = useState(false);
 
   // Form state for edit profile
-  const [formName, setFormName] = useState(userData.name);
+  const [formName, setFormName] = useState(user?.name || "");
   const [tempProfileImage, setTempProfileImage] = useState(
-    userData.profileImage
+    user?.profileImage ? { uri: user.profileImage } : require("@/assets/images/userImage.png")
   );
+
+  // Update form values when user changes
+  useEffect(() => {
+    if (user) {
+      setFormName(user.name);
+      setTempProfileImage(user.profileImage 
+        ? { uri: user.profileImage } 
+        : require("@/assets/images/userImage.png"));
+    }
+  }, [user]);
 
   // Available languages
   const languages = ["English", "French", "Kinyarwanda", "Swahili"];
@@ -79,30 +84,31 @@ export default function ProfileScreen() {
 
   // Function to save profile changes
   const saveProfileChanges = () => {
-    setUserData({
-      ...userData,
+    // Update user profile in Redux store
+    const imageUri = tempProfileImage.uri ? tempProfileImage.uri : null;
+    
+    dispatch(updateUserProfile({
       name: formName,
-      profileImage: tempProfileImage,
-    });
+      profileImage: imageUri,
+    }));
+    
     setEditModalVisible(false);
     Alert.alert("Success", "Profile updated successfully!");
   };
 
   // Function to select language
   const selectLanguage = (language: string) => {
-    setUserData({
-      ...userData,
+    dispatch(updateUserProfile({
       language,
-    });
+    }));
     setLanguageModalVisible(false);
   };
 
   // Function to select location
   const selectLocation = (location: string) => {
-    setUserData({
-      ...userData,
+    dispatch(updateUserProfile({
       location,
-    });
+    }));
     setLocationModalVisible(false);
   };
 
@@ -121,13 +127,9 @@ export default function ProfileScreen() {
       {
         text: "Logout",
         onPress: async () => {
-          // In a real app, you would handle backend logout logic here
-
-          // Reset onboarding status to show onboarding flow again
-          await AsyncStorage.removeItem("hasSeenOnboarding");
-          await AsyncStorage.removeItem("user");
-          await AsyncStorage.removeItem("token");
-
+          // Dispatch logout action
+          dispatch(logoutUser());
+          
           // Navigate to onboarding flow
           router.replace("/OnboardingFlow");
         },
@@ -135,6 +137,15 @@ export default function ProfileScreen() {
       },
     ]);
   };
+
+  // If user is not loaded yet, show loading screen
+  if (!user) {
+    return (
+      <View className="flex-1 justify-center items-center">
+        <Text>Loading profile...</Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView className="flex-1 bg-gray-50">
@@ -155,11 +166,20 @@ export default function ProfileScreen() {
       {/* Profile Info */}
       <View className="items-center mt-8">
         <Image
-          source={userData.profileImage}
+          source={
+            user.profileImage
+              ? { uri: user.profileImage }
+              : require("@/assets/images/userImage.png")
+          }
           className="w-24 h-24 rounded-full"
         />
-        <Text className="mt-4 text-xl font-bold">{userData.name}</Text>
-        <Text className="text-gray-500">{userData.email}</Text>
+        <Text className="mt-4 text-xl font-bold">{user.name}</Text>
+        <Text className="text-gray-500">{user.email}</Text>
+        {user.role === "leader" && (
+          <View className="mt-1 bg-blue-100 px-4 py-1 rounded-full">
+            <Text className="text-blue-700 font-medium">{user.title || "Leader"}</Text>
+          </View>
+        )}
 
         <TouchableOpacity
           onPress={() => setEditModalVisible(true)}
@@ -181,7 +201,7 @@ export default function ProfileScreen() {
             <Text className="ml-4 text-lg text-gray-700">Language</Text>
           </View>
           <View className="flex-row items-center">
-            <Text className="mr-2 text-gray-500">{userData.language}</Text>
+            <Text className="mr-2 text-gray-500">{user.language || "English"}</Text>
             <AntDesign name="right" size={16} color="#999" />
           </View>
         </TouchableOpacity>
@@ -196,7 +216,7 @@ export default function ProfileScreen() {
             <Text className="ml-4 text-lg text-gray-700">Location</Text>
           </View>
           <View className="flex-row items-center">
-            <Text className="mr-2 text-gray-500">{userData.location}</Text>
+            <Text className="mr-2 text-gray-500">{user.location || "Not set"}</Text>
             <AntDesign name="right" size={16} color="#999" />
           </View>
         </TouchableOpacity>
@@ -270,7 +290,7 @@ export default function ProfileScreen() {
             <Text className="text-gray-700 mb-1 ml-2 mt-4">Email</Text>
             <View className="h-[60px] w-full bg-[#F8F8F8] rounded-[50px] px-4 flex justify-center">
               <Text className="text-gray-400">
-                {userData.email} (Cannot be changed)
+                {user.email} (Cannot be changed)
               </Text>
             </View>
 
@@ -306,19 +326,19 @@ export default function ProfileScreen() {
                 key={index}
                 onPress={() => selectLanguage(lang)}
                 className={`py-4 px-2 border-b border-gray-100 flex-row justify-between items-center ${
-                  userData.language === lang ? "bg-green-50" : ""
+                  user.language === lang ? "bg-green-50" : ""
                 }`}
               >
                 <Text
                   className={`text-lg ${
-                    userData.language === lang
+                    user.language === lang
                       ? "text-[#25B14C] font-semibold"
                       : "text-gray-700"
                   }`}
                 >
                   {lang}
                 </Text>
-                {userData.language === lang && (
+                {user.language === lang && (
                   <AntDesign name="check" size={20} color="#25B14C" />
                 )}
               </TouchableOpacity>
@@ -348,19 +368,19 @@ export default function ProfileScreen() {
                 key={index}
                 onPress={() => selectLocation(loc)}
                 className={`py-4 px-2 border-b border-gray-100 flex-row justify-between items-center ${
-                  userData.location === loc ? "bg-green-50" : ""
+                  user.location === loc ? "bg-green-50" : ""
                 }`}
               >
                 <Text
                   className={`text-lg ${
-                    userData.location === loc
+                    user.location === loc
                       ? "text-[#25B14C] font-semibold"
                       : "text-gray-700"
                   }`}
                 >
                   {loc}
                 </Text>
-                {userData.location === loc && (
+                {user.location === loc && (
                   <AntDesign name="check" size={20} color="#25B14C" />
                 )}
               </TouchableOpacity>

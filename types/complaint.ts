@@ -17,6 +17,7 @@ export interface Complaint {
   leader: Leader;
   category: string;
   status?: "pending" | "in-progress" | "resolved";
+  userId?: string; // ID of the user who created the complaint
 }
 
 export interface ComplaintsState {

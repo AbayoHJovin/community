@@ -1,19 +1,22 @@
+import { createComplaint } from "@/services/complaintService";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { addNewComplaint } from "@/store/slices/complaintsSlice";
 import { AntDesign, Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
-import React, { useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
-  Alert,
-  Animated,
-  Dimensions,
-  Image,
-  Modal,
-  Platform,
-  ScrollView,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    Animated,
+    Dimensions,
+    Image,
+    Modal,
+    Platform,
+    ScrollView,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 // Screen width for responsive sizing
@@ -39,8 +42,12 @@ const MONTHS = [
 ];
 
 export default function AddComplaintScreen() {
+  const dispatch = useAppDispatch();
+  const { user } = useAppSelector((state) => state.auth);
+  
   // Step management
   const [currentStep, setCurrentStep] = useState<number>(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Image selection state
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
@@ -285,7 +292,7 @@ export default function AddComplaintScreen() {
     setCurrentStep(2);
   };
 
-  const submitComplaint = () => {
+  const submitComplaint = async () => {
     // Validation
     if (!title.trim()) {
       showCustomAlert("Please enter a title for your complaint");
@@ -305,13 +312,47 @@ export default function AddComplaintScreen() {
       return;
     }
 
-    // Submit complaint - In a real app, you would send data to a server here
-    Alert.alert("Success", "Your complaint has been submitted successfully!", [
-      {
-        text: "OK",
-        onPress: () => router.push("/(tabs)"),
-      },
-    ]);
+    if (!user) {
+      showCustomAlert("You must be logged in to submit a complaint");
+      return;
+    }
+
+    // Prevent double submission
+    if (isSubmitting) return;
+    
+    try {
+      setIsSubmitting(true);
+      
+      // Create new complaint
+      const newComplaint = await createComplaint({
+        title: title,
+        subtitle: description,
+        date: date,
+        location: location,
+        imageUris: selectedImages,
+        userId: user.id,
+      });
+      
+      // Add the new complaint to the Redux store
+      dispatch(addNewComplaint(newComplaint));
+      
+      // Show success message
+      Alert.alert(
+        "Success", 
+        "Your complaint has been submitted successfully!", 
+        [
+          {
+            text: "OK",
+            onPress: () => router.push("/(tabs)"),
+          },
+        ]
+      );
+    } catch (error) {
+      console.error("Error submitting complaint:", error);
+      showCustomAlert("Failed to submit complaint. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // First step - Image selection screen
@@ -739,10 +780,13 @@ export default function AddComplaintScreen() {
         {/* Submit Button */}
         <View className="absolute bottom-5 right-5 z-10">
           <TouchableOpacity
-            className="bg-green-500 py-3 px-7 rounded-md shadow-md"
+            className={`${isSubmitting ? 'bg-gray-400' : 'bg-green-500'} py-3 px-7 rounded-md shadow-md`}
             onPress={submitComplaint}
+            disabled={isSubmitting}
           >
-            <Text className="text-white text-base font-bold">POST</Text>
+            <Text className="text-white text-base font-bold">
+              {isSubmitting ? 'SUBMITTING...' : 'POST'}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>

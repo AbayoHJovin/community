@@ -63,33 +63,44 @@
 //   );
 // }
 
-import React, { useEffect } from "react";
-import {
-  View,
-  Text,
-  ScrollView,
-  Image,
-  TouchableOpacity,
-  FlatList,
-  Alert,
-  StyleSheet,
-} from "react-native";
-import { router } from "expo-router";
-import ComplaintComponent from "@/components/custom/complaintComponent";
-import SearchButton from "@/assets/svg/SearchButton";
 import Bell from "@/assets/svg/Bell";
+import SearchButton from "@/assets/svg/SearchButton";
+import ComplaintComponent from "@/components/custom/complaintComponent";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { fetchComplaints } from "@/store/slices/complaintsSlice";
+import { router } from "expo-router";
+import React, { useEffect } from "react";
+import {
+    Alert,
+    FlatList,
+    Image,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from "react-native";
 
 const HomeScreen = () => {
   const dispatch = useAppDispatch();
   const { complaints, loading, error } = useAppSelector(
     (state) => state.complaints
   );
+  const { user } = useAppSelector(state => state.auth);
 
   useEffect(() => {
     dispatch(fetchComplaints());
   }, [dispatch]);
+  
+  // Filter complaints for the current user if logged in
+  const userComplaints = React.useMemo(() => {
+    if (!user) return [];
+    return complaints.filter(complaint => 
+      // Check for userId property - this is our file-storage approach
+      // but keep backward compatibility with complaints that don't have userId
+      complaint.userId ? complaint.userId === user.id : true
+    );
+  }, [complaints, user]);
 
   function onPin() {
     console.log("Pinned!");
@@ -119,11 +130,17 @@ const HomeScreen = () => {
       <View className="bg-[#25B14C] w-full h-60 p-5 flex flex-col justify-evenly">
         <View className="flex flex-row items-center justify-between">
           <Image
-            source={require("../../assets/images/userImage.png")}
+            source={
+              user?.profileImage 
+                ? { uri: user.profileImage }
+                : require("../../assets/images/userImage.png")
+            }
             resizeMode="cover"
             className="w-14 h-14 rounded-full"
           />
-          <Text className="text-white font-semibold text-xl">Welcome</Text>
+          <Text className="text-white font-semibold text-xl">
+            Welcome{user?.name ? `, ${user.name.split(' ')[0]}` : ''}
+          </Text>
           <Bell />
         </View>
         <View className="flex flex-row items-center mt-5 justify-between space-x-3">
@@ -151,7 +168,7 @@ const HomeScreen = () => {
         <View className="flex-1 justify-center items-center h-[350px]">
           <Text className="text-center text-gray-600 text-lg">{error}</Text>
         </View>
-      ) : complaints && complaints.length > 0 ? (
+      ) : userComplaints && userComplaints.length > 0 ? (
         <View>
           <View className="flex flex-row justify-between p-5">
             <Text className="text-[#25B14C] font-semibold text-lg">
@@ -160,7 +177,7 @@ const HomeScreen = () => {
             <Text className="text-[#25B14C]">See all</Text>
           </View>
           <FlatList
-            data={complaints}
+            data={userComplaints}
             keyExtractor={(item) => item.id.toString()}
             renderItem={({ item }) => (
               <TouchableOpacity

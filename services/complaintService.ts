@@ -1,103 +1,197 @@
-// Replace with your actual API base URL
-const API_BASE_URL = "https://yourapiurl.com/api";
+import mockUserComplaints, { getComplaintsByUserId } from "@/data/mockComplaints";
+import { Complaint } from "@/types/complaint";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as FileSystem from "expo-file-system";
+import { Platform } from "react-native";
 
-/**
- * Service for handling complaint-related API operations
- */
-class ComplaintService {
-  /**
-   * Delete a complaint by ID
-   * @param id - The ID of the complaint to delete
-   * @returns Promise resolving to the API response
-   */
-  async deleteComplaint(id: number): Promise<any> {
-    try {
-      // For demo/development purposes, simulate API call
-      if (process.env.NODE_ENV === "development" || true) {
-        // Force simulation for now
-        return await this.simulateDeleteComplaint(id);
-      }
+// Directory for storing complaint images
+const COMPLAINTS_DIRECTORY = FileSystem.documentDirectory + "complaints/";
 
-      // In production, make the actual API call
-      const response = await fetch(`${API_BASE_URL}/complaints/${id}`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error("Error deleting complaint:", error);
-      throw error;
-    }
+// Function to ensure complaints directory exists
+const ensureComplaintsDirectoryExists = async (): Promise<void> => {
+  const dirInfo = await FileSystem.getInfoAsync(COMPLAINTS_DIRECTORY);
+  if (!dirInfo.exists) {
+    await FileSystem.makeDirectoryAsync(COMPLAINTS_DIRECTORY, { intermediates: true });
   }
+};
 
-  /**
-   * Simulate deleting a complaint (for development/testing)
-   * @param id - The ID of the complaint to delete
-   * @returns Promise simulating an API response
-   */
-  private simulateDeleteComplaint(id: number): Promise<any> {
-    return new Promise((resolve, reject) => {
-      // Simulate network delay
-      setTimeout(() => {
-        // Simulate success with 90% probability
-        if (Math.random() > 0.1) {
-          resolve({
-            success: true,
-            message: "Complaint deleted successfully",
-            data: { id },
-          });
-        } else {
-          // Simulate server error
-          reject(
-            new Error("Failed to delete complaint. Server error occurred.")
-          );
-        }
-      }, 1000);
+// Function to save an image to the file system
+const saveImageToFileSystem = async (
+  imageUri: string,
+  complaintId: number,
+  index: number
+): Promise<string> => {
+  try {
+    await ensureComplaintsDirectoryExists();
+    
+    // Create a unique filename for this image
+    const filename = `complaint_${complaintId}_image_${index}.jpg`;
+    const destinationUri = COMPLAINTS_DIRECTORY + filename;
+    
+    // Copy the image to our app's storage
+    await FileSystem.copyAsync({
+      from: imageUri,
+      to: destinationUri
     });
+    
+    return destinationUri;
+  } catch (error) {
+    console.error("Error saving image:", error);
+    throw error;
   }
+};
 
-  /**
-   * Get all complaints
-   * @returns Promise resolving to array of complaints
-   */
-  async getComplaints(): Promise<any[]> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/complaints`);
+// Function to get the next available complaint ID
+const getNextComplaintId = (): number => {
+  // Find the highest ID in the current complaints
+  const highestId = mockUserComplaints.reduce(
+    (max, complaint) => Math.max(max, complaint.id),
+    0
+  );
+  // Return the next ID
+  return highestId + 1;
+};
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error("Error fetching complaints:", error);
-      throw error;
+// Function to create a new complaint
+export const createComplaint = async (
+  complaintData: {
+    title: string;
+    subtitle: string;
+    date: Date;
+    location: string;
+    imageUris: string[];
+    userId: string;
+  }
+): Promise<Complaint> => {
+  try {
+    const newComplaintId = getNextComplaintId();
+    
+    // Get the formatted date, day, and time
+    const formattedDate = complaintData.date.toISOString().split('T')[0]; // YYYY-MM-DD
+    const day = complaintData.date.toLocaleDateString('en-US', { weekday: 'long' });
+    const time = complaintData.date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: 'numeric',
+      hour12: true
+    });
+    
+    // Save the main image to the file system
+    let savedImageUri: string;
+    if (Platform.OS === 'web') {
+      // For web, we can't use FileSystem, so just use the original URI
+      savedImageUri = complaintData.imageUris[0];
+    } else {
+      // For native platforms, save the image to the file system
+      savedImageUri = await saveImageToFileSystem(
+        complaintData.imageUris[0],
+        newComplaintId,
+        0
+      );
     }
-  }
-
-  /**
-   * Get a complaint by ID
-   * @param id - The ID of the complaint to fetch
-   * @returns Promise resolving to the complaint data
-   */
-  async getComplaintById(id: number): Promise<any> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/complaints/${id}`);
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
+    
+    // Create the new complaint object
+    const newComplaint: Complaint = {
+      id: newComplaintId,
+      date: formattedDate,
+      day: day,
+      time: time,
+      title: complaintData.title,
+      subtitle: complaintData.subtitle,
+      location: complaintData.location,
+      backgroundImage: { uri: savedImageUri }, // Use the saved image URI
+      leader: { name: "Steve Bertin", responsibilities: "Mayor of Gasabo" }, // Default leader
+      category: "General", // Default category
+      status: "pending", // Default status is pending
+    };
+    
+    // Add userId to the complaint data for storage
+    const complaintWithUserId = {
+      ...newComplaint,
+      userId: complaintData.userId,
+    };
+    
+    // Add the new complaint to the mock data
+    // In a real app, this would be a server API call
+    await addComplaintToStorage(complaintWithUserId);
+    
+    // Save additional images if any
+    if (complaintData.imageUris.length > 1) {
+      const additionalImages = [];
+      for (let i = 1; i < complaintData.imageUris.length; i++) {
+        if (Platform.OS !== 'web') {
+          const savedUri = await saveImageToFileSystem(
+            complaintData.imageUris[i],
+            newComplaintId,
+            i
+          );
+          additionalImages.push(savedUri);
+        } else {
+          additionalImages.push(complaintData.imageUris[i]);
+        }
       }
-
-      return await response.json();
-    } catch (error) {
-      console.error(`Error fetching complaint with ID ${id}:`, error);
-      throw error;
+      
+      // Store additional images separately
+      await AsyncStorage.setItem(
+        `complaint_${newComplaintId}_additional_images`,
+        JSON.stringify(additionalImages)
+      );
     }
+    
+    return newComplaint;
+  } catch (error) {
+    console.error("Error creating complaint:", error);
+    throw error;
   }
-}
+};
 
-export const complaintService = new ComplaintService();
+// Function to store a new complaint in AsyncStorage
+const addComplaintToStorage = async (complaint: any): Promise<void> => {
+  try {
+    // Get existing complaints
+    const storedComplaints = await AsyncStorage.getItem("userComplaints");
+    let complaints: any[] = storedComplaints ? JSON.parse(storedComplaints) : [];
+    
+    // Add the new complaint
+    complaints.push(complaint);
+    
+    // Save back to AsyncStorage
+    await AsyncStorage.setItem("userComplaints", JSON.stringify(complaints));
+    
+    // Also update our in-memory mock data (for immediate use)
+    mockUserComplaints.push(complaint);
+  } catch (error) {
+    console.error("Error adding complaint to storage:", error);
+    throw error;
+  }
+};
+
+// Function to fetch user's complaints
+export const fetchUserComplaints = async (userId: string): Promise<Complaint[]> => {
+  try {
+    // Try to get complaints from AsyncStorage first
+    const storedComplaints = await AsyncStorage.getItem("userComplaints");
+    
+    if (storedComplaints) {
+      const complaints: any[] = JSON.parse(storedComplaints);
+      return complaints
+        .filter(complaint => complaint.userId === userId)
+        .map(complaint => ({
+          ...complaint,
+          backgroundImage: complaint.backgroundImage.uri 
+            ? { uri: complaint.backgroundImage.uri }
+            : complaint.backgroundImage
+        }));
+    }
+    
+    // If no stored complaints, fall back to mock data
+    return getComplaintsByUserId(userId);
+  } catch (error) {
+    console.error("Error fetching user complaints:", error);
+    return getComplaintsByUserId(userId);
+  }
+};
+
+export default {
+  createComplaint,
+  fetchUserComplaints
+};

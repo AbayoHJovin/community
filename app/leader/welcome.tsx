@@ -4,12 +4,12 @@ import { AntDesign } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect } from "react";
 import {
-  Image,
-  SafeAreaView,
-  StatusBar,
-  Text,
-  TouchableOpacity,
-  View,
+    Image,
+    SafeAreaView,
+    StatusBar,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
 export default function LeaderWelcomeScreen() {
@@ -17,16 +17,22 @@ export default function LeaderWelcomeScreen() {
 
   // Ensure we have a user and they're a leader
   useEffect(() => {
-    if (!user || user.role !== "leader") {
-      // Redirect to login if not a leader
+    if (!user) {
+      // Redirect to login if not authenticated
       router.replace("/OnboardingFlow");
+      return;
+    }
+    
+    if (user.role !== "leader") {
+      // Redirect to citizen home if not a leader
+      router.replace("/(tabs)");
       return;
     }
 
     // Automatically navigate to complaints screen after a short delay
     const timer = setTimeout(() => {
       router.replace("/leader/complaints");
-    }, 500);
+    }, 2000); // Increased timeout to give user time to see welcome screen
 
     return () => clearTimeout(timer);
   }, [user]);
