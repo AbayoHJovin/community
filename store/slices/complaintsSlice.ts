@@ -1,5 +1,6 @@
 import { fetchUserComplaints } from "@/services/complaintService";
-import { Complaint, ComplaintsState } from "@/types/complaint";
+import { Complaint, ComplaintsState, Response } from "@/types/complaint";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 const mockComplaints: Complaint[] = [
@@ -175,6 +176,63 @@ export const deleteComplaint = createAsyncThunk(
   }
 );
 
+// Add a new thunk to add responses to complaints
+export const addResponseToComplaint = createAsyncThunk(
+  "complaints/addResponse",
+  async (
+    { complaintId, response }: { complaintId: number; response: Response },
+    { rejectWithValue, getState }
+  ) => {
+    try {
+      // In a real app, this would be an API call to add the response
+      // For now, we'll just update the local state
+      
+      // Get current complaints from state
+      const state: any = getState();
+      const complaints = state.complaints.complaints;
+      
+      // Find the complaint to update
+      const complaint = complaints.find(c => c.id === complaintId);
+      if (!complaint) {
+        throw new Error(`Complaint with ID ${complaintId} not found`);
+      }
+      
+      // Create updated complaint with new response
+      const updatedComplaint = {
+        ...complaint,
+        responses: complaint.responses ? [...complaint.responses, response] : [response],
+        // Optionally update complaint status based on response status
+        status: response.status,
+      };
+      
+      // Update complaint in local storage if using file-based storage
+      try {
+        // Get stored complaints
+        const storedComplaintsJson = await AsyncStorage.getItem("userComplaints");
+        if (storedComplaintsJson) {
+          const storedComplaints = JSON.parse(storedComplaintsJson);
+          
+          // Find and update the specific complaint
+          const updatedComplaints = storedComplaints.map((c: Complaint) => 
+            c.id === complaintId ? updatedComplaint : c
+          );
+          
+          // Save back to storage
+          await AsyncStorage.setItem("userComplaints", JSON.stringify(updatedComplaints));
+        }
+      } catch (storageError) {
+        console.error("Failed to update storage:", storageError);
+        // Continue even if storage update fails
+      }
+      
+      return { complaintId, response };
+    } catch (error) {
+      console.error("Error adding response:", error);
+      return rejectWithValue("Failed to add response to complaint");
+    }
+  }
+);
+
 const initialState: ComplaintsState = {
   complaints: mockComplaints, // Use mock data initially for development
   loading: false,
@@ -231,6 +289,37 @@ const complaintsSlice = createSlice({
           typeof action.payload === "string"
             ? action.payload
             : "Failed to delete complaint";
+      })
+      // Add response cases
+      .addCase(addResponseToComplaint.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(addResponseToComplaint.fulfilled, (state, action) => {
+        state.loading = false;
+        
+        // Find the complaint and add the response
+        const { complaintId, response } = action.payload;
+        const complaint = state.complaints.find(c => c.id === complaintId);
+        
+        if (complaint) {
+          // Add response to the complaint
+          if (!complaint.responses) {
+            complaint.responses = [response];
+          } else {
+            complaint.responses.push(response);
+          }
+          
+          // Update status if needed
+          complaint.status = response.status;
+        }
+      })
+      .addCase(addResponseToComplaint.rejected, (state, action) => {
+        state.loading = false;
+        state.error =
+          typeof action.payload === "string"
+            ? action.payload
+            : "Failed to add response";
       });
   },
 });

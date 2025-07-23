@@ -191,7 +191,77 @@ export const fetchUserComplaints = async (userId: string): Promise<Complaint[]> 
   }
 };
 
+// Function to delete a complaint by ID
+export const deleteComplaint = async (complaintId: number): Promise<boolean> => {
+  try {
+    // Get current complaints from AsyncStorage
+    const storedComplaints = await AsyncStorage.getItem("userComplaints");
+    if (!storedComplaints) {
+      console.error("No complaints found in storage");
+      return false;
+    }
+    
+    // Parse stored complaints and filter out the one to delete
+    const complaints: any[] = JSON.parse(storedComplaints);
+    const complaintToDelete = complaints.find(c => c.id === complaintId);
+    
+    if (!complaintToDelete) {
+      console.error(`Complaint with ID ${complaintId} not found`);
+      return false;
+    }
+    
+    // Filter out the complaint to delete
+    const updatedComplaints = complaints.filter(c => c.id !== complaintId);
+    
+    // Save the updated complaints back to AsyncStorage
+    await AsyncStorage.setItem("userComplaints", JSON.stringify(updatedComplaints));
+    
+    // Also update our in-memory mock data
+    const mockIndex = mockUserComplaints.findIndex(c => c.id === complaintId);
+    if (mockIndex !== -1) {
+      mockUserComplaints.splice(mockIndex, 1);
+    }
+    
+    // Delete related files if needed
+    if (Platform.OS !== 'web') {
+      try {
+        // Delete main image if it's in our file system
+        const complaint = complaints.find(c => c.id === complaintId);
+        if (complaint && complaint.backgroundImage && complaint.backgroundImage.uri) {
+          const uri = complaint.backgroundImage.uri;
+          if (uri.startsWith(COMPLAINTS_DIRECTORY)) {
+            await FileSystem.deleteAsync(uri, { idempotent: true });
+          }
+        }
+        
+        // Delete additional images if any
+        const additionalImagesKey = `complaint_${complaintId}_additional_images`;
+        const additionalImagesJson = await AsyncStorage.getItem(additionalImagesKey);
+        if (additionalImagesJson) {
+          const additionalImages = JSON.parse(additionalImagesJson);
+          for (const imageUri of additionalImages) {
+            if (imageUri.startsWith(COMPLAINTS_DIRECTORY)) {
+              await FileSystem.deleteAsync(imageUri, { idempotent: true });
+            }
+          }
+          // Remove the additional images entry from AsyncStorage
+          await AsyncStorage.removeItem(additionalImagesKey);
+        }
+      } catch (fileError) {
+        console.error("Error deleting complaint files:", fileError);
+        // Continue with deletion even if file deletion fails
+      }
+    }
+    
+    return true;
+  } catch (error) {
+    console.error("Error deleting complaint:", error);
+    throw error;
+  }
+};
+
 export default {
   createComplaint,
-  fetchUserComplaints
+  fetchUserComplaints,
+  deleteComplaint
 };

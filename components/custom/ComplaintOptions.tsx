@@ -1,22 +1,22 @@
-import React, { useEffect, useState, useRef } from "react";
-import {
-  View,
-  TouchableOpacity,
-  Text,
-  Modal,
-  Pressable,
-  TouchableWithoutFeedback,
-  StyleSheet,
-  useWindowDimensions,
-  Platform,
-  Animated,
-  Alert,
-  ActivityIndicator,
-  ToastAndroid,
-} from "react-native";
 import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { complaintService } from "../../services/complaintService";
+import { useEffect, useRef, useState } from "react";
+import {
+    ActivityIndicator,
+    Alert,
+    Animated,
+    Modal,
+    Platform,
+    Pressable,
+    StyleSheet,
+    Text,
+    ToastAndroid,
+    TouchableOpacity,
+    TouchableWithoutFeedback,
+    useWindowDimensions,
+    View,
+} from "react-native";
+import { deleteComplaint } from "../../services/complaintService";
 import { useAppDispatch } from "../../store/hooks";
 import { removeComplaint } from "../../store/slices/complaintsSlice";
 
@@ -104,8 +104,12 @@ const ComplaintOptions = ({
       // First update UI immediately for better UX
       dispatch(removeComplaint(complaintId));
 
-      // Call the API to delete the complaint
-      await complaintService.deleteComplaint(complaintId);
+      // Call the service function to delete the complaint from AsyncStorage
+      const success = await deleteComplaint(complaintId);
+
+      if (!success) {
+        throw new Error("Failed to delete complaint from storage");
+      }
 
       setIsDeleting(false);
       setShowDeleteConfirm(false);

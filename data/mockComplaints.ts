@@ -80,6 +80,36 @@ export const mockUserComplaints: ComplaintWithUserId[] = [
     category: "Environment",
     status: "in-progress",
   },
+  // Complaint assigned specifically to Steve Bertin in Gasabo
+  {
+    id: 6,
+    userId: "1", // User ID
+    date: "2024-07-18",
+    day: "Thursday",
+    time: "10:15 AM",
+    title: "Power Outages in Gasabo District",
+    subtitle: "We've been experiencing frequent power outages in our area for the past week. This is affecting businesses and households.",
+    location: "Gasabo, Kigali",
+    backgroundImage: require("../assets/images/complaintImage.png"),
+    leader: { name: "Steve Bertin", responsibilities: "Mayor of Gasabo" },
+    category: "Utilities",
+    status: "pending",
+  },
+  // Another complaint for Steve Bertin
+  {
+    id: 7,
+    userId: "3", // User ID
+    date: "2024-07-20",
+    day: "Saturday",
+    time: "2:30 PM",
+    title: "Drainage System Issues",
+    subtitle: "The drainage system in our neighborhood is blocked, causing flooding during rainy days.",
+    location: "Gasabo, Kigali",
+    backgroundImage: require("../assets/images/userImage.png"),
+    leader: { name: "Steve Bertin", responsibilities: "Mayor of Gasabo" },
+    category: "Infrastructure",
+    status: "pending",
+  },
 ];
 
 // Function to get complaints by user ID

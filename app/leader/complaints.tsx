@@ -1,10 +1,11 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Feather } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
-  Dimensions,
   FlatList,
   Image,
   Modal,
@@ -16,18 +17,20 @@ import {
   View,
 } from "react-native";
 import ComplaintsHeaderBg from "../../assets/svg/ComplaintsHeaderBg";
-import { useAppDispatch, useAppSelector } from "../../store/hooks";
-import { fetchComplaints } from "../../store/slices/complaintsSlice";
+import { useAppSelector } from "../../store/hooks";
 import { Complaint } from "../../types/complaint";
+import { initializeTestComplaints } from "../../utils/testInitComplaintsData";
 
-const { width } = Dimensions.get("window");
+// Define extended type to include createdBy
+interface ComplaintWithCreator extends Complaint {
+  createdBy?: string;
+}
 
 export default function LeaderComplaints() {
-  const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
-  const { complaints, loading, error } = useAppSelector(
-    (state) => state.complaints
-  );
+  const [complaints, setComplaints] = useState<ComplaintWithCreator[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
   const [activeTab, setActiveTab] = useState("complaints");
   const [searchQuery, setSearchQuery] = useState("");
@@ -38,7 +41,7 @@ export default function LeaderComplaints() {
 
   const dropdownAnimation = useRef(new Animated.Value(0)).current;
 
-  // Ensure user is authenticated and fetch complaints
+  // Ensure user is authenticated and fetch complaints directly from AsyncStorage
   useEffect(() => {
     if (!user || user.role !== "leader") {
       // Redirect to login if not a leader
@@ -46,8 +49,39 @@ export default function LeaderComplaints() {
       return;
     }
 
-    dispatch(fetchComplaints());
-  }, [dispatch, user]);
+    // Load complaints directly from AsyncStorage - use the correct key "userComplaints"
+    const loadComplaints = async () => {
+      try {
+        setLoading(true);
+        console.log('Loading complaints from AsyncStorage for leader view...');
+        
+        // Try the correct key "userComplaints" first
+        const complaintsJson = await AsyncStorage.getItem("userComplaints");
+        if (complaintsJson) {
+          const parsedComplaints = JSON.parse(complaintsJson);
+          setComplaints(parsedComplaints);
+          console.log(`Leader view: Successfully loaded ${parsedComplaints.length} complaints from AsyncStorage with key "userComplaints"`);
+        } else {
+          // If no complaints found, initialize test data
+          console.log('No complaints found in AsyncStorage with key "userComplaints", initializing test data...');
+          
+          // Use the test utility to initialize test data
+          const testComplaints = await initializeTestComplaints();
+          setComplaints(testComplaints);
+          console.log(`Initialized ${testComplaints.length} test complaints`);
+        }
+        setError(null);
+      } catch (err) {
+        console.error("Error loading complaints from AsyncStorage:", err);
+        setError("Failed to load complaints");
+        setComplaints([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadComplaints();
+  }, [user]);
 
   // Animate dropdown
   useEffect(() => {
@@ -56,29 +90,24 @@ export default function LeaderComplaints() {
       duration: 200,
       useNativeDriver: true,
     }).start();
-  }, [sortDropdownVisible]);
+  }, [sortDropdownVisible,dropdownAnimation]);
 
-  // Filter and sort complaints based on search, category, status, leader's location, and sort order
+  // Filter and sort complaints based on search, category, and status only
   const filteredComplaints = complaints
     ? complaints
         .filter((complaint) => {
-          // Only show complaints in the leader's location
-          const isInLeaderLocation = user?.location
-            ? complaint.location
-                .toLowerCase()
-                .includes(user.location.toLowerCase())
-            : true;
-
           // Search filter
           const matchesSearch =
             searchQuery === "" ||
             complaint.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            complaint.subtitle
-              .toLowerCase()
-              .includes(searchQuery.toLowerCase()) ||
-            complaint.location
-              .toLowerCase()
-              .includes(searchQuery.toLowerCase());
+            (complaint.subtitle &&
+              complaint.subtitle
+                .toLowerCase()
+                .includes(searchQuery.toLowerCase())) ||
+            (complaint.location &&
+              complaint.location
+                .toLowerCase()
+                .includes(searchQuery.toLowerCase()));
 
           // Category filter
           const matchesCategory =
@@ -88,7 +117,7 @@ export default function LeaderComplaints() {
           // Status filter
           let matchesStatus = true;
           if (selectedStatus !== "All") {
-            const status = complaint.status || "Pending"; // Default to pending if no status
+            const status = complaint.status || "pending"; // Default to pending if no status
             const normalizedSelectedStatus =
               selectedStatus === "In Progress"
                 ? "in-progress"
@@ -97,7 +126,6 @@ export default function LeaderComplaints() {
           }
 
           return (
-            isInLeaderLocation &&
             matchesSearch &&
             matchesCategory &&
             matchesStatus
@@ -155,7 +183,7 @@ export default function LeaderComplaints() {
     setSortDropdownVisible(false);
   };
 
-  const renderComplaintItem = ({ item }: { item: Complaint }) => {
+  const renderComplaintItem = ({ item }: { item: ComplaintWithCreator }) => {
     // Format date for display (e.g., "1ST MAY- SAT -2:00 PM")
     const date = new Date(item.date);
     const day = date.getDate();
@@ -196,6 +224,14 @@ export default function LeaderComplaints() {
             >
               {item.title}
             </Text>
+            <View className="mt-1">
+              <Text className="text-xs text-gray-500">
+                Location: {item.location}
+              </Text>
+              <Text className="text-xs text-gray-500">
+                Created by: {item.createdBy || item.userId || "Anonymous"}
+              </Text>
+            </View>
           </View>
         </View>
       </TouchableOpacity>
@@ -226,6 +262,29 @@ export default function LeaderComplaints() {
     );
   }
 
+  if (loading) {
+    return (
+      <View className="flex-1 justify-center items-center bg-white">
+        <ActivityIndicator size="large" color="#25B14C" />
+        <Text className="text-gray-500 mt-4">Loading complaints...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View className="flex-1 justify-center items-center bg-white">
+        <Text className="text-red-500 text-lg mb-4">{error}</Text>
+        <TouchableOpacity 
+          className="bg-[#25B14C] px-4 py-2 rounded-lg"
+          onPress={() => router.back()}
+        >
+          <Text className="text-white">Go Back</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return (
     <View className="flex-1">
       <StatusBar barStyle="light-content" backgroundColor="#25B14C" />
@@ -239,7 +298,7 @@ export default function LeaderComplaints() {
               <Feather name="arrow-left" size={24} color="white" />
             </TouchableOpacity>
             <Text className="text-white text-3xl font-bold">
-              View Complaints
+              All Complaints
             </Text>
           </View>
           <TouchableOpacity onPress={toggleSortDropdown}>
@@ -351,14 +410,14 @@ export default function LeaderComplaints() {
               </Text>
             </TouchableOpacity>
           </View>
-          </View>
+        </View>
 
         {/* Main Content */}
         <View className="flex-1 bg-[#F9F9F9]" style={styles.mainContent}>
           {activeTab === "complaints" && (
             <>
               <Text className="text-2xl font-bold text-gray-800 mb-4 px-4 mt-4">
-                All complaints
+                All Complaints ({complaints.length})
               </Text>
 
               <FlatList
@@ -373,7 +432,7 @@ export default function LeaderComplaints() {
                       <Text className="text-gray-700 font-medium text-lg mb-2 px-4">
                         {item.title}
                       </Text>
-          <FlatList
+                      <FlatList
                         data={item.data}
                         renderItem={renderComplaintItem}
                         keyExtractor={(complaint) => complaint.id.toString()}
@@ -386,15 +445,15 @@ export default function LeaderComplaints() {
                 ListEmptyComponent={
                   <View className="flex-1 justify-center items-center py-8">
                     <Text className="text-gray-500">
-                      No complaints found in your area
+                      No complaints available
                     </Text>
                   </View>
                 }
                 contentContainerStyle={{ paddingBottom: 20 }}
-          />
+              />
             </>
-        )}
-      </View>
+          )}
+        </View>
       </SafeAreaView>
     </View>
   );

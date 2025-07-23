@@ -1,22 +1,43 @@
-import { router } from "expo-router";
-import { useLocalSearchParams } from "expo-router";
-import React, { useState, useEffect } from "react";
-import {
-  ScrollView,
-  View,
-  Text,
-  Image,
-  TouchableOpacity,
-  Alert,
-  useWindowDimensions,
-  Platform,
-  StatusBar,
-  ImageBackground,
-} from "react-native";
 import ComplaintOptions from "@/components/custom/ComplaintOptions";
-import { useAppSelector } from "@/store/hooks";
-import { AntDesign } from "@expo/vector-icons";
 import RoundedImageGroup from "@/components/custom/RoundedImageGroup";
+import { useAppSelector } from "@/store/hooks";
+import { Response } from "@/types/complaint";
+import { AntDesign } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { router, useLocalSearchParams } from "expo-router";
+import { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Image,
+  ImageBackground,
+  Platform,
+  ScrollView,
+  StatusBar,
+  Text,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
+} from "react-native";
+
+// Interface for complaint with userId
+interface ComplaintWithUser {
+  id: number;
+  date: string;
+  day: string;
+  time: string;
+  title: string;
+  subtitle: string;
+  location: string;
+  backgroundImage: any;
+  leader: { name: string; responsibilities: string };
+  category: string;
+  status?: "pending" | "in-progress" | "resolved";
+  userId?: string;
+  responses?: Response[];
+  createdBy?: string;
+}
 
 const ComplaintDetails = () => {
   const { width } = useWindowDimensions();
@@ -25,28 +46,151 @@ const ComplaintDetails = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const params = useLocalSearchParams();
   const complaintId = params.complaintId ? Number(params.complaintId) : null;
+  const [loading, setLoading] = useState(true);
+  const [localComplaint, setLocalComplaint] = useState<ComplaintWithUser | null>(null);
+
+  // Get complaint from Redux store
+  const reduxComplaint = useAppSelector((state) =>
+    state.complaints.complaints.find((c) => c.id === complaintId)
+  );
 
   useEffect(() => {
     console.log("Complaint ID from params:", complaintId);
     if (!complaintId) {
       Alert.alert("Error", "No complaint ID provided");
+      return;
     }
-  }, [complaintId]);
 
-  const complaint = useAppSelector((state) =>
-    state.complaints.complaints.find((c) => c.id === complaintId)
-  );
-
-  const allComplaintIds = useAppSelector((state) =>
-    state.complaints.complaints.map((c) => c.id)
-  );
-
-  useEffect(() => {
-    if (!complaint && complaintId) {
-      console.log("Complaint not found in Redux state for ID:", complaintId);
-      console.log("Available complaints:", JSON.stringify(allComplaintIds));
+    // If complaint is in Redux store, use it
+    if (reduxComplaint) {
+      setLocalComplaint(reduxComplaint);
+      setLoading(false);
+      return;
     }
-  }, [complaint, complaintId, allComplaintIds]);
+
+    // If not in Redux, try to get it from AsyncStorage
+    const fetchFromAsyncStorage = async () => {
+      try {
+        setLoading(true);
+        const storedComplaints = await AsyncStorage.getItem("userComplaints");
+        if (storedComplaints) {
+          const complaints: ComplaintWithUser[] = JSON.parse(storedComplaints);
+          const foundComplaint = complaints.find(c => c.id === complaintId);
+          
+          if (foundComplaint) {
+            console.log("Complaint found in AsyncStorage:", foundComplaint.title);
+            // Make sure backgroundImage is properly formatted
+            const formattedComplaint = {
+              ...foundComplaint,
+              backgroundImage: foundComplaint.backgroundImage.uri 
+                ? { uri: foundComplaint.backgroundImage.uri }
+                : foundComplaint.backgroundImage
+            };
+            setLocalComplaint(formattedComplaint);
+          } else {
+            console.error(`Complaint with ID ${complaintId} not found in AsyncStorage`);
+          }
+        } else {
+          console.error("No complaints found in AsyncStorage");
+        }
+      } catch (error) {
+        console.error("Error fetching from AsyncStorage:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFromAsyncStorage();
+  }, [complaintId, reduxComplaint]);
+
+  // Use either Redux complaint or local complaint from AsyncStorage
+  const complaint = reduxComplaint || localComplaint;
+
+  const toggleModal = () => {
+    setIsModalVisible(!isModalVisible);
+  };
+
+  const content = complaint?.subtitle || "";
+  const maxLength = 100;
+
+  const handleToggle = () => {
+    setIsExpanded(!isExpanded);
+  };
+
+  const shouldTruncate = content.length > maxLength;
+  const displayedText =
+    isExpanded || !shouldTruncate
+      ? content
+      : content.slice(0, maxLength) + "...";
+
+  const statusBarPadding =
+    Platform.OS === "ios" ? 50 : (StatusBar.currentHeight || 0) + 12;
+    
+  // Format date for more readable display
+  const formatResponseDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
+  
+  // Render each response item
+  const renderResponseItem = ({ item }: { item: Response }) => {
+    return (
+      <View className={`mb-4 p-4 rounded-lg ${
+        item.status === "resolved" 
+          ? "bg-green-50 border-l-4 border-green-500" 
+          : "bg-blue-50 border-l-4 border-blue-500"
+      }`}>
+        <View className="flex-row justify-between mb-2">
+          <Text className="text-gray-600 text-xs">
+            {formatResponseDate(item.date)}
+          </Text>
+          <View className={`px-2 py-1 rounded-full ${
+            item.status === "resolved" 
+              ? "bg-green-100" 
+              : item.status === "in-progress" 
+                ? "bg-blue-100" 
+                : "bg-yellow-100"
+          }`}>
+            <Text className={`text-xs font-medium ${
+              item.status === "resolved" 
+                ? "text-green-600" 
+                : item.status === "in-progress" 
+                  ? "text-blue-600" 
+                  : "text-yellow-600"
+            }`}>
+              {item.status === "in-progress" 
+                ? "In Progress" 
+                : item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+            </Text>
+          </View>
+        </View>
+        
+        <Text className="text-gray-800 font-medium mb-1">
+          {item.responderName || "Community Leader"}
+        </Text>
+        
+        <Text className="text-gray-700">
+          {item.text}
+        </Text>
+      </View>
+    );
+  };
+
+  if (loading) {
+    return (
+      <View className="flex-1 justify-center items-center bg-[#F5F5F5]">
+        <ActivityIndicator size="large" color="#25B14C" />
+        <Text className="text-gray-500 mt-4">Loading complaint details...</Text>
+      </View>
+    );
+  }
 
   if (!complaint) {
     return (
@@ -62,26 +206,6 @@ const ComplaintDetails = () => {
       </View>
     );
   }
-
-  const toggleModal = () => {
-    setIsModalVisible(!isModalVisible);
-  };
-
-  const content = complaint.subtitle;
-  const maxLength = 100;
-
-  const handleToggle = () => {
-    setIsExpanded(!isExpanded);
-  };
-
-  const shouldTruncate = content.length > maxLength;
-  const displayedText =
-    isExpanded || !shouldTruncate
-      ? content
-      : content.slice(0, maxLength) + "...";
-
-  const statusBarPadding =
-    Platform.OS === "ios" ? 50 : (StatusBar.currentHeight || 0) + 12;
 
   return (
     <ScrollView className="bg-[#F5F5F5]">
@@ -300,6 +424,25 @@ const ComplaintDetails = () => {
             </TouchableOpacity>
           )}
         </View>
+        
+        {/* Responses Section */}
+        {complaint.responses && complaint.responses.length > 0 && (
+          <View className="mb-10">
+            <Text
+              className="font-semibold text-[#25B14C] mb-3 p-3"
+              style={{ fontSize: isMobile ? 16 : 18 }}
+            >
+              Leader Responses
+            </Text>
+            <FlatList
+              data={complaint.responses}
+              renderItem={renderResponseItem}
+              keyExtractor={(item) => item.id.toString()}
+              scrollEnabled={false}
+              contentContainerStyle={{ paddingHorizontal: 8 }}
+            />
+          </View>
+        )}
       </View>
     </ScrollView>
   );
